@@ -211,24 +211,48 @@ exports.handler = async (event, context) => {
 
     console.log('Starting question classification...');
 
-    // Ultra-simple approach to get basic functionality working
-    console.log('Creating ultra-simple prompt...');
+    // Re-enable intelligent question classification
+    const questionsWithMethodologies = questions.map((question, index) => {
+      console.log(`Classifying question ${index + 1}: "${question}"`);
+      const type = classifyQuestion(question);
+      const framework = getMethodologyFramework(type);
+      console.log(`Result: type=${type}, methodology=${framework.name}`);
+      return {
+        question,
+        type,
+        framework
+      };
+    });
 
-    const prompt = `Generate professional interview answers in JSON format.
+    console.log('Question classifications:', questionsWithMethodologies.map(q => ({
+      question: q.question.substring(0, 50) + '...',
+      type: q.type,
+      methodology: q.framework.name
+    })));
 
-Questions:
-${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+    // Create intelligent prompt with methodology guidance
+    const prompt = `Generate professional interview answers using appropriate methodologies for each question type.
 
-Return only JSON:
+Job Context: ${role} position (${experienceLevel || 'professional'})${companyName ? ` at ${companyName}` : ''}
+
+Questions with recommended methodologies:
+${questionsWithMethodologies.map((item, index) => {
+  return `${index + 1}. "${item.question}"
+   → Type: ${item.type.toUpperCase()}
+   → Use: ${item.framework.name} (${item.framework.structure})
+   → Approach: ${item.framework.guidance}`;
+}).join('\n\n')}
+
+IMPORTANT: Use the specific methodology for each question. Return only JSON:
 {
   "answers": [
     {
-      "question": "first question here",
-      "type": "general",
-      "methodology": "Professional Response",
-      "full": "200 word professional answer",
-      "concise": "50 word brief answer",
-      "keyPoints": ["point1", "point2", "point3", "point4", "point5"]
+      "question": "exact question text",
+      "type": "question_type",
+      "methodology": "methodology_name",
+      "full": "200-word answer using the specified methodology",
+      "concise": "60-word condensed version",
+      "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4", "key point 5"]
     }
   ]
 }`;
@@ -379,11 +403,12 @@ Return only JSON:
     // Validate and clean answers
     const validatedAnswers = parsedAnswers.answers.map((answer, index) => {
       const questionText = questions[index] || `Question ${index + 1}`;
+      const questionMetadata = questionsWithMethodologies[index];
 
       return {
         question: answer.question || questionText,
-        methodology: answer.methodology || 'Professional Response',
-        type: answer.type || 'general',
+        methodology: answer.methodology || questionMetadata?.framework.name || 'Professional Response',
+        type: answer.type || questionMetadata?.type || 'general',
         full: cleanTextContent(answer.full || 'Answer generation failed for this question.'),
         concise: cleanTextContent(answer.concise || answer.brief || answer.short || 'Brief answer generation failed.'),
         keyPoints: Array.isArray(answer.keyPoints) ?
