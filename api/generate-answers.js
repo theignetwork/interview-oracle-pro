@@ -109,22 +109,13 @@ REQUIREMENTS:
 Questions to answer:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-CRITICAL: You must return COMPLETE, VALID JSON only. Do not truncate responses.
-
-IMPORTANT JSON FORMATTING RULES:
-- Escape all quotes in text content (use \\" for quotes inside strings)
-- Replace all newlines with \\n
-- Escape all backslashes as \\\\
-- Do not include unescaped control characters
-- Ensure all strings are properly quoted and escaped
-
-Return ONLY valid JSON in this exact format (ensure the JSON is complete and properly closed):
+Return ONLY valid JSON in this exact format:
 {
   "answers": [
     {
       "question": "original question text",
-      "full": "Complete 200-300 word SOAR answer with properly escaped quotes and newlines",
-      "concise": "60-80 word condensed answer with escaped characters",
+      "full": "Complete 200-300 word SOAR answer",
+      "concise": "60-80 word condensed answer",
       "keyPoints": [
         "Key talking point 1",
         "Key talking point 2",
@@ -136,7 +127,7 @@ Return ONLY valid JSON in this exact format (ensure the JSON is complete and pro
   ]
 }
 
-CRITICAL: All text content must have properly escaped quotes (\"), newlines (\\n), and other control characters to create valid JSON.`;
+IMPORTANT: Return ONLY the JSON object above with no additional text or formatting.`;
 
     // Send request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -200,55 +191,26 @@ CRITICAL: All text content must have properly escaped quotes (\"), newlines (\\n
         };
       }
 
-      // Properly escape special characters in JSON string values
-      function sanitizeJsonString(str) {
-        // Find all string values in the JSON and escape them properly
-        return str.replace(/"([^"]*(?:\\.[^"]*)*)"/g, (match, content) => {
-          // Skip if this is a JSON key (followed by :)
-          const nextChar = str[str.indexOf(match) + match.length];
-          if (nextChar === ':') {
-            return match; // Don't escape JSON keys
-          }
+      // Parse JSON directly - let Claude handle proper escaping
+      console.log('Parsing JSON response from Claude...');
 
-          // Escape special characters in string content
-          const escapedContent = content
-            .replace(/\\/g, '\\\\')    // Escape backslashes first
-            .replace(/"/g, '\\"')      // Escape quotes
-            .replace(/\n/g, '\\n')     // Escape newlines
-            .replace(/\r/g, '\\r')     // Escape carriage returns
-            .replace(/\t/g, '\\t')     // Escape tabs
-            .replace(/\b/g, '\\b')     // Escape backspaces
-            .replace(/\f/g, '\\f')     // Escape form feeds
-            .replace(/[\x00-\x1F\x7F]/g, ''); // Remove other control chars
-
-          return `"${escapedContent}"`;
-        });
-      }
-
-      const sanitizedJsonString = sanitizeJsonString(jsonString);
-      console.log('Sanitized JSON length:', sanitizedJsonString.length);
-
-      // Validate JSON before parsing
       try {
-        JSON.parse(sanitizedJsonString);
-        console.log('JSON validation successful');
-      } catch (validationError) {
-        console.error('JSON validation failed:', validationError.message);
-        console.error('Problematic JSON:', sanitizedJsonString.substring(0, 500));
+        parsedContent = JSON.parse(jsonString);
+        console.log('JSON parsing successful');
+      } catch (parseError) {
+        console.error('JSON parsing failed:', parseError.message);
+        console.error('Raw JSON preview:', jsonString.substring(0, 500));
 
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({
             error: 'Invalid JSON from Claude',
-            details: `JSON validation failed: ${validationError.message}`,
-            jsonPreview: sanitizedJsonString.substring(0, 500) + '...'
+            details: `JSON parsing failed: ${parseError.message}`,
+            jsonPreview: jsonString.substring(0, 500) + '...'
           })
         };
       }
-
-      // Parse the validated JSON
-      parsedContent = JSON.parse(sanitizedJsonString);
 
       // Validate JSON structure
       if (!parsedContent || typeof parsedContent !== 'object') {
