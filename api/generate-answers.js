@@ -109,7 +109,9 @@ REQUIREMENTS:
 Questions to answer:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Return ONLY valid JSON in this exact format:
+CRITICAL: You must return COMPLETE, VALID JSON only. Do not truncate responses.
+
+Return ONLY valid JSON in this exact format (ensure the JSON is complete and properly closed):
 {
   "answers": [
     {
@@ -125,7 +127,9 @@ Return ONLY valid JSON in this exact format:
       ]
     }
   ]
-}`;
+}
+
+IMPORTANT: Ensure the JSON response is COMPLETE with proper closing braces and brackets. Do not cut off mid-sentence.`;
 
     // Send request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -137,7 +141,7 @@ Return ONLY valid JSON in this exact format:
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307', // Using Haiku for speed and cost efficiency
-        max_tokens: 4000,
+        max_tokens: 3000, // Optimized for complete SOAR answers
         temperature: 0.7,
         messages: [{
           role: 'user',
@@ -163,20 +167,46 @@ Return ONLY valid JSON in this exact format:
 
     const apiResponse = await response.json();
 
-    // Parse Claude's response
+    // Parse Claude's response with enhanced validation
     let parsedContent;
     try {
-      const responseText = apiResponse.content[0].text;
+      const responseText = apiResponse.content[0].text.trim();
+      console.log('Raw Claude response length:', responseText.length);
+      console.log('Raw Claude response preview:', responseText.substring(0, 200) + '...');
+
+      // Check if response is truncated (doesn't end with closing brace)
+      if (!responseText.endsWith('}')) {
+        console.error('Response appears truncated - missing closing brace');
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Incomplete response from Claude',
+            details: 'Response was truncated - increase max_tokens or reduce question count',
+            responseLength: responseText.length,
+            responseEnding: responseText.slice(-100)
+          })
+        };
+      }
 
       // Try to extract JSON from response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        parsedContent = JSON.parse(jsonMatch[0]);
+        const jsonString = jsonMatch[0];
+        console.log('Extracted JSON length:', jsonString.length);
+        parsedContent = JSON.parse(jsonString);
       } else {
+        console.log('No JSON match found, trying direct parse');
         parsedContent = JSON.parse(responseText);
       }
+
+      // Validate JSON structure
+      if (!parsedContent || typeof parsedContent !== 'object') {
+        throw new Error('Parsed content is not a valid object');
+      }
+
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
+      console.error('JSON parsing error:', parseError.message);
       console.error('Raw Claude response:', apiResponse.content[0].text);
 
       return {
@@ -184,8 +214,9 @@ Return ONLY valid JSON in this exact format:
         headers,
         body: JSON.stringify({
           error: 'Failed to parse Claude response',
-          details: 'Response was not valid JSON',
-          rawResponse: apiResponse.content[0].text.substring(0, 500) + '...'
+          details: `JSON parsing failed: ${parseError.message}`,
+          responseLength: apiResponse.content[0].text.length,
+          rawResponse: apiResponse.content[0].text.substring(0, 1000) + '...'
         })
       };
     }
