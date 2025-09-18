@@ -197,17 +197,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Limit questions for performance
-    if (questions.length > 8) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Maximum 8 questions allowed per request',
-          received: questions.length
-        })
-      };
-    }
+    // PRO members get unlimited questions - no artificial limits
 
     console.log('Starting question classification...');
 
@@ -270,7 +260,7 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
     // Call Claude API
     const claudeRequest = {
       model: 'claude-3-haiku-20240307',
-      max_tokens: 3000,
+      max_tokens: 8000, // Increased for unlimited questions
       temperature: 0.7,
       messages: [{
         role: 'user',
