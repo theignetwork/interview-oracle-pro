@@ -260,7 +260,7 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
     // Call Claude API
     const claudeRequest = {
       model: 'claude-3-haiku-20240307',
-      max_tokens: 8000, // Increased for unlimited questions
+      max_tokens: 4096, // Maximum allowed for Haiku model
       temperature: 0.7,
       messages: [{
         role: 'user',
