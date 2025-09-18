@@ -328,6 +328,8 @@ class InterviewOraclePro {
 
   async generateAnswers() {
     const selectedQuestionTexts = this.getSelectedQuestionTexts();
+    console.log('Selected questions:', selectedQuestionTexts);
+
     if (selectedQuestionTexts.length === 0) {
       this.showError('Please select at least one question to generate answers for.');
       return;
@@ -339,28 +341,39 @@ class InterviewOraclePro {
     const companyName = document.getElementById('companyName').value.trim();
     const answerStyle = document.querySelector('.style-btn.active')?.dataset.style || 'confident';
 
+    const requestData = {
+      questions: selectedQuestionTexts,
+      jobDescription,
+      role,
+      experienceLevel,
+      companyName,
+      answerStyle
+    };
+
+    console.log('Generate answers request data:', requestData);
+
     // Show loading
     this.setLoadingState(true, 'Generating SOAR answers...');
 
     try {
+      console.log('Making request to /.netlify/functions/generate-answers');
       const response = await fetch('/.netlify/functions/generate-answers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questions: selectedQuestionTexts,
-          jobDescription,
-          role,
-          experienceLevel,
-          companyName,
-          answerStyle
-        })
+        body: JSON.stringify(requestData)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (!response.ok) {
-        throw new Error('Failed to generate answers');
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`Failed to generate answers: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('API Success Response:', result);
       this.currentAnswers = result.answers;
 
       this.displayAnswers();
