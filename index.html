@@ -16,188 +16,191 @@
   </script>
 
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="icons.css">
-  <link rel="stylesheet" href="stats-icons.css">
 </head>
 <body>
-  <div class="container">
-    <!-- PRO Header -->
-    <header class="header">
-      <div class="header-left">
-        <h1 class="title">INTERVIEW <span class="highlight">ORACLE</span> <span class="pro-badge">PRO</span></h1>
-        <p class="subtitle">Advanced Interview Preparation Suite</p>
-      </div>
-      <div class="member-welcome">
-        <span class="welcome-text">Welcome, <span id="memberName">PRO Member</span>!</span>
-        <div class="usage-indicator">
-          <span class="usage-text">Unlimited Usage</span>
-          <div class="pro-indicator"></div>
+  <div class="app-container">
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <h1 class="app-title">INTERVIEW <span class="highlight">ORACLE</span> <span class="pro-badge">PRO</span></h1>
+          <p class="app-subtitle">Advanced Interview Preparation Suite</p>
+        </div>
+        <div class="member-info">
+          <span class="welcome-text">Welcome, <span id="memberName">PRO Member</span>!</span>
+          <div class="usage-status">
+            <span class="usage-text">Unlimited Usage</span>
+            <div class="pro-indicator"></div>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- Tab Navigation -->
-    <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="generate">
-        <span class="tab-icon icon icon-lightning"></span>
-        Generate
+    <!-- Navigation Tabs -->
+    <nav class="tab-navigation">
+      <button class="tab-button active" data-tab="generate">
+        <span class="tab-icon">⚡</span>
+        <span class="tab-label">Generate</span>
       </button>
-      <button class="tab-btn" data-tab="answers">
+      <button class="tab-button" data-tab="answers">
         <span class="tab-icon">💡</span>
-        Answers
+        <span class="tab-label">Answers</span>
       </button>
-      <button class="tab-btn" data-tab="practice">
+      <button class="tab-button" data-tab="practice">
         <span class="tab-icon">🎯</span>
-        Practice
+        <span class="tab-label">Practice</span>
       </button>
-      <button class="tab-btn" data-tab="saved">
+      <button class="tab-button" data-tab="saved">
         <span class="tab-icon">💾</span>
-        Saved
+        <span class="tab-label">Saved</span>
       </button>
-      <button class="tab-btn" data-tab="stats">
+      <button class="tab-button" data-tab="stats">
         <span class="tab-icon">📊</span>
-        Stats
+        <span class="tab-label">Stats</span>
       </button>
     </nav>
 
-    <!-- Generate Tab -->
-    <div class="tab-content active" id="generate-tab">
-      <section class="form-section">
-        <div class="error-message" id="errorMessage"></div>
+    <!-- Global Error Message -->
+    <div class="error-message hidden" id="globalError"></div>
 
-        <div class="form-group">
-          <label for="jobDescription" class="form-label">Job Description</label>
-          <textarea class="job-description-input" placeholder="Paste the complete job description here..." maxlength="3000" id="jobDescription"></textarea>
-          <div class="char-counter" id="charCounter">0 / 3000</div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="roleSelector" class="form-label">Role Category</label>
-            <select class="role-selector" id="roleSelector">
-              <option value="General">General</option>
-              <option value="Software Engineering">Software Engineering</option>
-              <option value="Data Analytics">Data & Analytics</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="Finance">Finance & Accounting</option>
-              <option value="Operations">Operations</option>
-              <option value="Product Management">Product Management</option>
-              <option value="Customer Support">Customer Support</option>
-              <option value="Healthcare">Healthcare</option>
-              <option value="Education">Education</option>
-              <option value="Human Resources">Human Resources</option>
-              <option value="Retail Hospitality">Retail & Hospitality</option>
-              <option value="Manufacturing">Manufacturing & Supply Chain</option>
-              <option value="Construction">Construction & Trades</option>
-              <option value="Government">Government & Non-Profit</option>
-              <option value="Legal">Legal</option>
-              <option value="Creative Design">Creative & Design</option>
-              <option value="Real Estate">Real Estate</option>
-              <option value="Transportation">Transportation & Logistics</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="experienceLevel" class="form-label">Experience Level</label>
-            <select class="experience-selector" id="experienceLevel">
-              <option value="Entry Level">Entry Level (0-2 years)</option>
-              <option value="Mid Level">Mid Level (2-5 years)</option>
-              <option value="Senior Level">Senior Level (5-8 years)</option>
-              <option value="Lead/Manager">Lead/Manager (8+ years)</option>
-              <option value="Executive">Executive/Director</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="companyName" class="form-label">Company Name (Optional)</label>
-          <input type="text" class="company-input" placeholder="e.g., Google, Microsoft, etc." id="companyName" maxlength="100">
-        </div>
-
-        <button class="predict-button" id="predictButton">
-          <span class="button-icon icon icon-lightning"></span>
-          Generate Interview Questions
-        </button>
-      </section>
-
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p class="loading-text">Analyzing job description and generating personalized questions...</p>
-      </div>
-
-      <!-- Enhanced Question Display -->
-      <section class="results-section" id="resultsSection">
-        <div class="results-header">
-          <h2 class="results-title">Your Personalized Interview Questions</h2>
-          <div class="results-actions">
-            <button class="action-btn" id="selectAllBtn">Select All</button>
-            <button class="action-btn" id="generateAnswersBtn">Generate SOAR Answers</button>
-            <button class="action-btn" id="saveSessionBtn">Save Session</button>
-          </div>
-        </div>
-
-        <div class="question-categories">
-          <div class="question-category">
-            <h3 class="category-title">
-              <span class="category-icon">💭</span>
-              Behavioral Questions
-              <span class="select-category-btn" data-category="behavioral">Select All</span>
-            </h3>
-            <ul class="question-list" id="behavioralQuestions"></ul>
-          </div>
-
-          <div class="question-category">
-            <h3 class="category-title">
-              <span class="category-icon">🔧</span>
-              Technical/Role-Specific Questions
-              <span class="select-category-btn" data-category="technical">Select All</span>
-            </h3>
-            <ul class="question-list" id="technicalQuestions"></ul>
-          </div>
-
-          <div class="question-category">
-            <h3 class="category-title">
-              <span class="category-icon">🏢</span>
-              Company-Specific Questions
-              <span class="select-category-btn" data-category="company">Select All</span>
-            </h3>
-            <ul class="question-list" id="companyQuestions"></ul>
-          </div>
-        </div>
-      </section>
+    <!-- Global Loading State -->
+    <div class="loading-overlay hidden" id="globalLoading">
+      <div class="loading-spinner"></div>
+      <p class="loading-text" id="loadingText">Processing...</p>
     </div>
 
-    <!-- Answers Tab -->
-    <div class="tab-content" id="answers-tab">
-      <section class="answers-section">
-        <div class="answers-header">
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- Generate Questions Tab -->
+      <section class="tab-content active" id="generate-tab">
+        <div class="content-header">
+          <h2 class="section-title">Generate Interview Questions</h2>
+          <p class="section-description">Create personalized questions based on your job description</p>
+        </div>
+
+        <form class="question-form" id="questionForm">
+          <div class="form-group">
+            <label for="jobDescription" class="form-label">Job Description</label>
+            <textarea
+              id="jobDescription"
+              class="form-textarea"
+              placeholder="Paste the complete job description here..."
+              rows="6"
+              maxlength="3000"
+              required
+            ></textarea>
+            <div class="char-counter">
+              <span id="charCount">0</span> / 3000 characters
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="roleSelector" class="form-label">Role Category</label>
+              <select id="roleSelector" class="form-select" required>
+                <option value="">Select a role...</option>
+                <option value="General">General</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Data Analytics">Data & Analytics</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Sales">Sales</option>
+                <option value="Finance">Finance & Accounting</option>
+                <option value="Operations">Operations</option>
+                <option value="Product Management">Product Management</option>
+                <option value="Customer Support">Customer Support</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Education">Education</option>
+                <option value="Human Resources">Human Resources</option>
+                <option value="Retail Hospitality">Retail & Hospitality</option>
+                <option value="Manufacturing">Manufacturing & Supply Chain</option>
+                <option value="Construction">Construction & Trades</option>
+                <option value="Government">Government & Non-Profit</option>
+                <option value="Legal">Legal</option>
+                <option value="Creative Design">Creative & Design</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Transportation">Transportation & Logistics</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="experienceLevel" class="form-label">Experience Level</label>
+              <select id="experienceLevel" class="form-select" required>
+                <option value="">Select experience...</option>
+                <option value="Entry Level">Entry Level (0-2 years)</option>
+                <option value="Mid Level">Mid Level (2-5 years)</option>
+                <option value="Senior Level">Senior Level (5-8 years)</option>
+                <option value="Lead/Manager">Lead/Manager (8+ years)</option>
+                <option value="Executive">Executive/Director</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="companyName" class="form-label">Company Name (Optional)</label>
+            <input
+              type="text"
+              id="companyName"
+              class="form-input"
+              placeholder="e.g., Google, Microsoft, etc."
+              maxlength="100"
+            >
+          </div>
+
+          <button type="submit" class="primary-button" id="generateBtn">
+            <span class="button-icon">⚡</span>
+            Generate Interview Questions
+          </button>
+        </form>
+
+        <!-- Questions Results -->
+        <div class="questions-results hidden" id="questionsResults">
+          <div class="results-header">
+            <h3 class="results-title">Your Personalized Interview Questions</h3>
+            <div class="results-actions">
+              <button class="action-button" id="selectAllQuestions">Select All</button>
+              <button class="action-button primary" id="generateAnswersBtn">Generate SOAR Answers</button>
+              <button class="action-button" id="saveSessionBtn">Save Session</button>
+            </div>
+          </div>
+
+          <div class="question-categories" id="questionCategories">
+            <!-- Question categories will be populated by JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <!-- SOAR Answers Tab -->
+      <section class="tab-content" id="answers-tab">
+        <div class="content-header">
           <h2 class="section-title">SOAR Method Answers</h2>
           <p class="section-description">Generate comprehensive answers using the SOAR framework (Situation, Obstacles, Actions, Results)</p>
         </div>
 
-        <div class="selected-questions" id="selectedQuestions">
-          <p class="no-selection">Select questions from the Generate tab to create SOAR answers.</p>
-        </div>
+        <div class="answers-setup" id="answersSetup">
+          <div class="selected-questions-preview" id="selectedQuestionsPreview">
+            <p class="no-selection">Select questions from the Generate tab to create SOAR answers.</p>
+          </div>
 
-        <div class="answer-style-selector" id="answerStyleSelector" style="display: none;">
-          <label class="form-label">Answer Style</label>
-          <div class="style-buttons">
-            <button class="style-btn active" data-style="confident">Confident</button>
-            <button class="style-btn" data-style="humble">Humble</button>
-            <button class="style-btn" data-style="technical">Technical</button>
-            <button class="style-btn" data-style="leadership">Leadership</button>
+          <div class="answer-style-selector hidden" id="answerStyleSelector">
+            <label class="form-label">Answer Style</label>
+            <div class="style-buttons">
+              <button class="style-button active" data-style="confident">Confident</button>
+              <button class="style-button" data-style="humble">Humble</button>
+              <button class="style-button" data-style="technical">Technical</button>
+              <button class="style-button" data-style="leadership">Leadership</button>
+            </div>
           </div>
         </div>
 
-        <div class="answers-container" id="answersContainer"></div>
+        <div class="answers-container" id="answersContainer">
+          <!-- Generated answers will be populated here -->
+        </div>
       </section>
-    </div>
 
-    <!-- Practice Tab -->
-    <div class="tab-content" id="practice-tab">
-      <section class="practice-section">
-        <div class="practice-header">
+      <!-- Practice Mode Tab -->
+      <section class="tab-content" id="practice-tab">
+        <div class="content-header">
           <h2 class="section-title">Practice Mode</h2>
           <p class="section-description">Practice your answers with timer and recording simulation</p>
         </div>
@@ -205,29 +208,29 @@
         <div class="practice-setup" id="practiceSetup">
           <div class="practice-options">
             <div class="option-group">
-              <label class="form-label">Practice Type</label>
+              <label class="form-label">Question Type</label>
               <div class="radio-group">
-                <label class="radio-label">
+                <label class="radio-option">
                   <input type="radio" name="practiceType" value="behavioral" checked>
-                  <span class="radio-custom"></span>
-                  Behavioral Questions
+                  <span class="radio-button"></span>
+                  <span class="radio-label">Behavioral Questions</span>
                 </label>
-                <label class="radio-label">
+                <label class="radio-option">
                   <input type="radio" name="practiceType" value="technical">
-                  <span class="radio-custom"></span>
-                  Technical Questions
+                  <span class="radio-button"></span>
+                  <span class="radio-label">Technical Questions</span>
                 </label>
-                <label class="radio-label">
+                <label class="radio-option">
                   <input type="radio" name="practiceType" value="all">
-                  <span class="radio-custom"></span>
-                  All Questions
+                  <span class="radio-button"></span>
+                  <span class="radio-label">All Questions</span>
                 </label>
               </div>
             </div>
 
             <div class="option-group">
               <label class="form-label">Time Limit</label>
-              <select class="time-selector" id="timeLimit">
+              <select id="timeLimit" class="form-select">
                 <option value="120">2 minutes (Standard)</option>
                 <option value="30">30 seconds (Elevator pitch)</option>
                 <option value="180">3 minutes (Detailed)</option>
@@ -236,161 +239,55 @@
             </div>
           </div>
 
-          <button class="start-practice-btn" id="startPracticeBtn">
+          <button class="primary-button" id="startPracticeBtn">
             <span class="button-icon">🎯</span>
             Start Practice Session
           </button>
         </div>
 
-        <div class="practice-session" id="practiceSession" style="display: none;">
-          <div class="practice-controls">
-            <div class="timer" id="practiceTimer">02:00</div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-            <div class="question-counter">
-              Question <span id="currentQuestionNum">1</span> of <span id="totalQuestions">10</span>
-            </div>
-          </div>
-
-          <div class="current-question" id="currentQuestion">
-            <h3 class="question-text">Tell me about a time when you overcame a significant challenge.</h3>
-            <div class="difficulty-tag">⭐ High Probability</div>
-          </div>
-
-          <div class="recording-simulation">
-            <div class="recording-indicator" id="recordingIndicator">
-              <div class="recording-dot"></div>
-              <span>Recording...</span>
-            </div>
-          </div>
-
-          <div class="practice-actions">
-            <button class="practice-btn" id="pauseBtn">⏸️ Pause</button>
-            <button class="practice-btn" id="nextBtn">⏭️ Next Question</button>
-            <button class="practice-btn" id="endPracticeBtn">⏹️ End Session</button>
-          </div>
-
-          <div class="practice-tips">
-            <h4>💡 Practice Tips:</h4>
-            <ul>
-              <li>Use the SOAR method: Situation, Obstacles, Actions, Results</li>
-              <li>Be specific with examples and quantify results when possible</li>
-              <li>Practice speaking clearly and at a steady pace</li>
-              <li>Make eye contact with the camera (if practicing with video)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="practice-complete" id="practiceComplete" style="display: none;">
-          <div class="completion-summary">
-            <h3>🎉 Practice Session Complete!</h3>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-number" id="completedQuestions">8</div>
-                <div class="stat-label">Questions Completed</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number" id="averageTime">1:45</div>
-                <div class="stat-label">Average Time</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number" id="sessionDuration">15m</div>
-                <div class="stat-label">Total Duration</div>
-              </div>
-            </div>
-          </div>
-          <button class="new-session-btn" id="newSessionBtn">Start New Session</button>
+        <div class="practice-session hidden" id="practiceSession">
+          <!-- Practice session UI will be populated by JavaScript -->
         </div>
       </section>
-    </div>
 
-    <!-- Saved Sessions Tab -->
-    <div class="tab-content" id="saved-tab">
-      <section class="saved-section">
-        <div class="saved-header">
+      <!-- Saved Sessions Tab -->
+      <section class="tab-content" id="saved-tab">
+        <div class="content-header">
           <h2 class="section-title">Saved Sessions</h2>
           <p class="section-description">Access your saved interview question sets and practice sessions</p>
         </div>
 
         <div class="saved-sessions" id="savedSessions">
-          <!-- Sessions will be loaded dynamically -->
+          <!-- Saved sessions will be populated by JavaScript -->
         </div>
 
-        <div class="empty-saved" id="emptySaved" style="display: none;">
+        <div class="empty-state hidden" id="emptySavedSessions">
           <div class="empty-icon">💾</div>
-          <h3>No Saved Sessions</h3>
-          <p>Generate questions and save your sessions to access them here.</p>
+          <h3 class="empty-title">No Saved Sessions</h3>
+          <p class="empty-description">Generate questions and save your sessions to access them here.</p>
         </div>
       </section>
-    </div>
 
-    <!-- Stats Dashboard Tab -->
-    <div class="tab-content" id="stats-tab">
-      <section class="stats-section">
-        <div class="stats-header">
+      <!-- Analytics Dashboard Tab -->
+      <section class="tab-content" id="stats-tab">
+        <div class="content-header">
           <h2 class="section-title">Usage Analytics</h2>
           <p class="section-description">Track your interview preparation progress</p>
         </div>
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon icon-lightning"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="totalQuestions">0</div>
-              <div class="stat-label">Questions Generated</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-bulb"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="totalAnswers">0</div>
-              <div class="stat-label">SOAR Answers Created</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-target"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="practiceSessions">0</div>
-              <div class="stat-label">Practice Sessions</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-clock"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="practiceTime">0h</div>
-              <div class="stat-label">Practice Time</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-save"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="savedCount">0</div>
-              <div class="stat-label">Saved Sessions</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-trending"></div>
-            <div class="stat-content">
-              <div class="stat-number" id="streakDays">0</div>
-              <div class="stat-label">Day Streak</div>
-            </div>
-          </div>
+        <div class="stats-grid" id="statsGrid">
+          <!-- Stats cards will be populated by JavaScript -->
         </div>
 
-        <div class="activity-chart">
-          <h3>Recent Activity</h3>
-          <div class="activity-timeline" id="activityTimeline">
-            <!-- Activity items will be loaded dynamically -->
+        <div class="activity-timeline" id="activityTimeline">
+          <h3 class="timeline-title">Recent Activity</h3>
+          <div class="timeline-content" id="timelineContent">
+            <!-- Activity items will be populated by JavaScript -->
           </div>
         </div>
       </section>
-    </div>
+
+    </main>
   </div>
 
   <script src="app.js"></script>

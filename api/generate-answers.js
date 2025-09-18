@@ -1,6 +1,10 @@
+/**
+ * Generate SOAR Framework Answers API
+ * Professional implementation with proper text handling
+ */
+
 exports.handler = async (event, context) => {
-  // Only accept POST requests
-  // Handle OPTIONS request for CORS
+  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -13,12 +17,12 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // Only accept POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ error: 'Method Not Allowed' })
@@ -27,20 +31,30 @@ exports.handler = async (event, context) => {
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
 
   try {
-    // Parse request body
-    const { questions, jobDescription, role, experienceLevel, companyName, answerStyle } = JSON.parse(event.body);
+    // Parse and validate request
+    const requestData = JSON.parse(event.body || '{}');
+    const { questions, jobDescription, role, experienceLevel, companyName, answerStyle } = requestData;
 
-    // Validate input
+    console.log('Generate answers request:', {
+      questionCount: questions?.length,
+      role,
+      experienceLevel,
+      answerStyle
+    });
+
+    // Validate required fields
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Questions array is required and must not be empty' })
+        body: JSON.stringify({
+          error: 'Questions array is required and must not be empty',
+          received: { hasQuestions: !!questions, isArray: Array.isArray(questions) }
+        })
       };
     }
 
@@ -48,63 +62,87 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Job description and role are required' })
+        body: JSON.stringify({
+          error: 'Job description and role are required',
+          received: { hasJobDescription: !!jobDescription, hasRole: !!role }
+        })
       };
     }
 
-    // Define answer styles with specific guidance
-    const stylePrompts = {
-      confident: "Write with confidence and authority. Use strong action verbs, showcase achievements prominently, and demonstrate leadership. Quantify results with specific numbers and percentages.",
-      humble: "Write with humility while highlighting accomplishments. Acknowledge team contributions, show continuous learning mindset, and emphasize collaboration and growth.",
-      technical: "Focus on technical details, methodologies, and specific technologies. Include technical challenges, problem-solving approaches, and implementation details relevant to the role.",
-      leadership: "Emphasize leadership qualities, team management, and strategic thinking. Show how you inspire others, make decisions, handle conflict, and drive organizational success."
+    // Limit questions for performance
+    if (questions.length > 8) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Maximum 8 questions allowed per request',
+          received: questions.length
+        })
+      };
+    }
+
+    // Define answer style configurations
+    const styleConfigurations = {
+      confident: {
+        tone: "confident and assertive",
+        guidance: "Use strong action verbs, showcase achievements prominently, and demonstrate leadership. Quantify results with specific numbers and percentages."
+      },
+      humble: {
+        tone: "humble yet accomplished",
+        guidance: "Acknowledge team contributions, show continuous learning mindset, and emphasize collaboration while highlighting personal growth."
+      },
+      technical: {
+        tone: "technical and detailed",
+        guidance: "Focus on technical methodologies, specific technologies, and implementation details. Include technical challenges and problem-solving approaches."
+      },
+      leadership: {
+        tone: "leadership-focused and strategic",
+        guidance: "Emphasize team management, decision-making, and strategic thinking. Show how you inspire others and drive organizational success."
+      }
     };
 
     const selectedStyle = answerStyle || 'confident';
-    const styleGuidance = stylePrompts[selectedStyle];
-    const expLevel = experienceLevel || 'experienced professional';
-    const companyText = companyName ? ` at ${companyName}` : '';
+    const styleConfig = styleConfigurations[selectedStyle] || styleConfigurations.confident;
 
-    // Build comprehensive prompt for SOAR answers
-    const prompt = `You are an expert career coach specializing in the SOAR interview method. Generate comprehensive, professional interview answers for a ${expLevel} applying for a ${role} position${companyText}.
+    // Build comprehensive prompt
+    const prompt = `You are an expert career coach specializing in the SOAR interview methodology. Generate professional interview answers for a ${experienceLevel || 'professional'} applying for a ${role} position${companyName ? ` at ${companyName}` : ''}.
 
 Job Context:
 ${jobDescription}
 
-Answer Style: ${styleGuidance}
+Answer Style: ${styleConfig.tone}
+Style Guidance: ${styleConfig.guidance}
 
-INSTRUCTIONS:
-For each question provided, create a detailed answer using the SOAR framework:
-- **Situation**: Set the context (20-30 words)
-- **Obstacles**: Identify challenges faced (20-30 words)
-- **Actions**: Detail specific actions taken (100-150 words)
-- **Results**: Quantify outcomes and impact (50-80 words)
+SOAR Framework Guidelines:
+- Situation: Brief context setting (20-30 words)
+- Obstacles: Challenges or difficulties faced (20-30 words)
+- Actions: Specific steps taken to address the situation (80-120 words)
+- Results: Quantified outcomes and impact (40-60 words)
 
-For each question, provide THREE versions:
+For each question, provide THREE response formats:
 
-1. **FULL SOAR ANSWER** (200-300 words):
+1. FULL SOAR ANSWER (200-280 words):
    - Complete professional response following SOAR structure
    - Include specific examples and quantified results
-   - Demonstrate skills relevant to the ${role} role
-   - Use ${selectedStyle} tone throughout
+   - Demonstrate skills relevant to ${role}
+   - Use ${styleConfig.tone} tone throughout
 
-2. **CONCISE VERSION** (60-80 words):
+2. CONCISE VERSION (60-80 words):
    - Condensed elevator pitch style
    - Hit all SOAR elements briefly
-   - Perfect for quick responses or follow-ups
+   - Perfect for follow-up questions
 
-3. **KEY TALKING POINTS** (5 bullet points):
-   - Essential points to remember and emphasize
-   - Action-oriented statements with impact
-   - Include specific metrics when possible
+3. KEY TALKING POINTS (exactly 5 bullet points):
+   - Essential points to remember
+   - Action-oriented statements
+   - Include metrics when possible
 
-REQUIREMENTS:
-- Make answers specific to ${role} and relevant job requirements
-- Include industry terminology and technical concepts
-- Use quantifiable metrics (percentages, dollar amounts, timeframes)
+Requirements:
+- Make answers specific to ${role} requirements
+- Include industry terminology relevant to the field
+- Use quantifiable metrics (percentages, amounts, timeframes)
 - Ensure each answer showcases different competencies
-- Maintain consistency with ${selectedStyle} approach
-- Make examples realistic and achievable
+- Keep responses realistic and achievable
 
 Questions to answer:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
@@ -114,22 +152,16 @@ Return ONLY valid JSON in this exact format:
   "answers": [
     {
       "question": "original question text",
-      "full": "Complete 200-300 word SOAR answer",
-      "concise": "60-80 word condensed answer",
-      "keyPoints": [
-        "Key talking point 1",
-        "Key talking point 2",
-        "Key talking point 3",
-        "Key talking point 4",
-        "Key talking point 5"
-      ]
+      "full": "Complete SOAR answer text",
+      "concise": "Brief version text",
+      "keyPoints": ["point 1", "point 2", "point 3", "point 4", "point 5"]
     }
   ]
-}
+}`;
 
-IMPORTANT: Return ONLY the JSON object above with no additional text or formatting.`;
+    console.log('Sending request to Claude API...');
 
-    // Send request to Claude API
+    // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -138,8 +170,8 @@ IMPORTANT: Return ONLY the JSON object above with no additional text or formatti
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307', // Using Haiku for speed and cost efficiency
-        max_tokens: 3000, // Optimized for complete SOAR answers
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 3000,
         temperature: 0.7,
         messages: [{
           role: 'user',
@@ -148,7 +180,7 @@ IMPORTANT: Return ONLY the JSON object above with no additional text or formatti
       })
     });
 
-    // Check response status
+    // Check Claude API response
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Claude API error:', response.status, errorText);
@@ -157,108 +189,71 @@ IMPORTANT: Return ONLY the JSON object above with no additional text or formatti
         headers,
         body: JSON.stringify({
           error: 'Claude API error',
-          details: errorText,
-          status: response.status
+          status: response.status,
+          details: errorText.substring(0, 200)
         })
       };
     }
 
-    const apiResponse = await response.json();
+    const claudeResponse = await response.json();
+    console.log('Claude API response received, length:', claudeResponse.content[0].text.length);
 
-    // Parse Claude's response with enhanced validation and escaping
-    let parsedContent;
+    // Extract and parse JSON response
+    const responseText = claudeResponse.content[0].text.trim();
+
+    // Find JSON in response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    const jsonString = jsonMatch ? jsonMatch[0] : responseText;
+
+    let parsedAnswers;
     try {
-      const rawResponseText = apiResponse.content[0].text.trim();
-      console.log('Raw Claude response length:', rawResponseText.length);
-      console.log('Raw Claude response preview:', rawResponseText.substring(0, 200) + '...');
-
-      // Extract JSON from response
-      const jsonMatch = rawResponseText.match(/\{[\s\S]*\}/);
-      let jsonString = jsonMatch ? jsonMatch[0] : rawResponseText;
-
-      // Check if response is truncated (doesn't end with closing brace)
-      if (!jsonString.endsWith('}')) {
-        console.error('Response appears truncated - missing closing brace');
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: 'Incomplete response from Claude',
-            details: 'Response was truncated - increase max_tokens or reduce question count',
-            responseLength: rawResponseText.length,
-            responseEnding: rawResponseText.slice(-100)
-          })
-        };
-      }
-
-      // Parse JSON directly - let Claude handle proper escaping
-      console.log('Parsing JSON response from Claude...');
-
-      try {
-        parsedContent = JSON.parse(jsonString);
-        console.log('JSON parsing successful');
-      } catch (parseError) {
-        console.error('JSON parsing failed:', parseError.message);
-        console.error('Raw JSON preview:', jsonString.substring(0, 500));
-
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: 'Invalid JSON from Claude',
-            details: `JSON parsing failed: ${parseError.message}`,
-            jsonPreview: jsonString.substring(0, 500) + '...'
-          })
-        };
-      }
-
-      // Validate JSON structure
-      if (!parsedContent || typeof parsedContent !== 'object') {
-        throw new Error('Parsed content is not a valid object');
-      }
-
+      parsedAnswers = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError.message);
-      console.error('Raw Claude response:', apiResponse.content[0].text);
+      console.error('JSON parsing failed:', parseError.message);
+      console.error('Response preview:', responseText.substring(0, 500));
 
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Failed to parse Claude response',
-          details: `JSON parsing failed: ${parseError.message}`,
-          responseLength: apiResponse.content[0].text.length,
-          rawResponse: apiResponse.content[0].text.substring(0, 1000) + '...'
+          details: parseError.message,
+          responsePreview: responseText.substring(0, 300)
         })
       };
     }
 
     // Validate response structure
-    if (!parsedContent.answers || !Array.isArray(parsedContent.answers)) {
+    if (!parsedAnswers.answers || !Array.isArray(parsedAnswers.answers)) {
+      console.error('Invalid response structure:', Object.keys(parsedAnswers));
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Invalid response structure from Claude',
           details: 'Missing answers array',
-          received: Object.keys(parsedContent)
+          received: Object.keys(parsedAnswers)
         })
       };
     }
 
-    // Ensure all answers have required fields and match frontend format
-    const validatedAnswers = parsedContent.answers.map((answer, index) => {
+    // Validate and clean answers
+    const validatedAnswers = parsedAnswers.answers.map((answer, index) => {
       const questionText = questions[index] || `Question ${index + 1}`;
 
       return {
         question: answer.question || questionText,
-        full: answer.full || answer.fullAnswer || 'Answer generation failed for this question.',
-        concise: answer.concise || answer.quickVersion || answer.short || 'Answer generation failed.',
-        keyPoints: Array.isArray(answer.keyPoints) ? answer.keyPoints :
-                  Array.isArray(answer.key_points) ? answer.key_points :
-                  ['Unable to generate key points']
+        full: cleanTextContent(answer.full || 'Answer generation failed for this question.'),
+        concise: cleanTextContent(answer.concise || answer.brief || answer.short || 'Brief answer generation failed.'),
+        keyPoints: Array.isArray(answer.keyPoints) ?
+          answer.keyPoints.map(point => cleanTextContent(point)) :
+          Array.isArray(answer.key_points) ?
+          answer.key_points.map(point => cleanTextContent(point)) :
+          ['Key points generation failed']
       };
     });
+
+    console.log('Successfully generated answers for', validatedAnswers.length, 'questions');
 
     // Return successful response
     return {
@@ -291,3 +286,29 @@ IMPORTANT: Return ONLY the JSON object above with no additional text or formatti
     };
   }
 };
+
+/**
+ * Clean text content to ensure proper display
+ * @param {string} text - Text to clean
+ * @returns {string} - Cleaned text
+ */
+function cleanTextContent(text) {
+  if (typeof text !== 'string') {
+    return String(text || '');
+  }
+
+  return text
+    .trim()
+    // Remove any control characters that might cause display issues
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    // Ensure proper sentence spacing
+    .replace(/\.\s+/g, '. ')
+    // Remove any leftover escape sequences
+    .replace(/\\n/g, ' ')
+    .replace(/\\r/g, '')
+    .replace(/\\t/g, ' ')
+    .replace(/\\\\/g, '\\')
+    .replace(/\\"/g, '"');
+}

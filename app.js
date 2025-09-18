@@ -1,268 +1,404 @@
-// Interview Oracle PRO - JavaScript Application
+/**
+ * Interview Oracle PRO - Professional Interview Preparation Suite
+ * Modern ES6+ JavaScript Application with Class-based Architecture
+ */
 
 class InterviewOraclePro {
   constructor() {
-    this.currentTab = 'generate';
+    // Core application state
     this.currentQuestions = {
       behavioral: [],
       technical: [],
       company: []
     };
     this.currentAnswers = [];
-    this.selectedQuestions = new Set();
-    this.currentSession = null;
     this.savedSessions = [];
-    this.practiceSession = null;
-    this.stats = this.loadStats();
+    this.selectedQuestions = new Set();
+    this.activeTab = 'generate';
+    this.stats = this.getDefaultStats();
 
+    // Practice session state
+    this.practiceSession = null;
+    this.practiceTimer = null;
+
+    // Initialize application
     this.init();
   }
 
+  // ===== INITIALIZATION =====
+
   init() {
     this.setupEventListeners();
-    this.loadSavedSessions();
-    this.updateStatsDisplay();
-    this.checkMemberStatus();
+    this.loadSavedData();
+    this.setupCharacterCounter();
+    this.showTab('generate');
+    console.log('Interview Oracle PRO initialized successfully');
   }
 
-  // ==================== EVENT LISTENERS ====================
   setupEventListeners() {
     // Tab navigation
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const tabName = e.currentTarget.dataset.tab;
+        this.showTab(tabName);
+      });
     });
 
-    // Form elements
-    const jobDescInput = document.getElementById('jobDescription');
-    const charCounter = document.getElementById('charCounter');
-
-    if (jobDescInput) {
-      jobDescInput.addEventListener('input', (e) => this.updateCharCounter(e));
+    // Question form submission
+    const questionForm = document.getElementById('questionForm');
+    if (questionForm) {
+      questionForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.generateQuestions();
+      });
     }
 
-    // Generate button
-    const predictButton = document.getElementById('predictButton');
-    if (predictButton) {
-      predictButton.addEventListener('click', () => this.generateQuestions());
-    }
-
-    // Results actions
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => this.selectAllQuestions());
-    }
-
-    const generateAnswersBtn = document.getElementById('generateAnswersBtn');
-    if (generateAnswersBtn) {
-      generateAnswersBtn.addEventListener('click', () => this.generateAnswers());
-    }
-
-    const saveSessionBtn = document.getElementById('saveSessionBtn');
-    if (saveSessionBtn) {
-      saveSessionBtn.addEventListener('click', () => this.saveSession());
-    }
-
-    // Category select buttons
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('select-category-btn')) {
-        this.selectCategory(e.target.dataset.category);
+    // Question selection
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('question-checkbox')) {
+        this.handleQuestionSelection(e);
       }
     });
 
-    // Answer style buttons
-    document.querySelectorAll('.style-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => this.selectAnswerStyle(e.target.dataset.style));
+    // Answer generation
+    const generateAnswersBtn = document.getElementById('generateAnswersBtn');
+    if (generateAnswersBtn) {
+      generateAnswersBtn.addEventListener('click', () => {
+        this.generateAnswers();
+      });
+    }
+
+    // Select all questions
+    const selectAllBtn = document.getElementById('selectAllQuestions');
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', () => {
+        this.selectAllQuestions();
+      });
+    }
+
+    // Save session
+    const saveSessionBtn = document.getElementById('saveSessionBtn');
+    if (saveSessionBtn) {
+      saveSessionBtn.addEventListener('click', () => {
+        this.saveCurrentSession();
+      });
+    }
+
+    // Answer style selection
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('style-button')) {
+        this.selectAnswerStyle(e.target.dataset.style);
+      }
+    });
+
+    // Answer tab switching
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('answer-tab')) {
+        this.showAnswerVariation(e.target.dataset.answerIndex, e.target.dataset.answerType);
+      }
     });
 
     // Practice mode
     const startPracticeBtn = document.getElementById('startPracticeBtn');
     if (startPracticeBtn) {
-      startPracticeBtn.addEventListener('click', () => this.startPractice());
+      startPracticeBtn.addEventListener('click', () => {
+        this.startPracticeMode();
+      });
     }
 
-    const pauseBtn = document.getElementById('pauseBtn');
-    if (pauseBtn) {
-      pauseBtn.addEventListener('click', () => this.pausePractice());
-    }
+    // Category selection
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('select-category-button')) {
+        this.selectCategoryQuestions(e.target.dataset.category);
+      }
+    });
+  }
 
-    const nextBtn = document.getElementById('nextBtn');
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => this.nextQuestion());
-    }
+  setupCharacterCounter() {
+    const jobDescTextarea = document.getElementById('jobDescription');
+    const charCount = document.getElementById('charCount');
 
-    const endPracticeBtn = document.getElementById('endPracticeBtn');
-    if (endPracticeBtn) {
-      endPracticeBtn.addEventListener('click', () => this.endPractice());
-    }
-
-    const newSessionBtn = document.getElementById('newSessionBtn');
-    if (newSessionBtn) {
-      newSessionBtn.addEventListener('click', () => this.startNewPracticeSession());
+    if (jobDescTextarea && charCount) {
+      jobDescTextarea.addEventListener('input', () => {
+        const count = jobDescTextarea.value.length;
+        charCount.textContent = count;
+        charCount.style.color = count > 2800 ? '#e74c3c' : count > 2400 ? '#f39c12' : '#8B9DC3';
+      });
     }
   }
 
-  // ==================== TAB MANAGEMENT ====================
-  switchTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  loadSavedData() {
+    try {
+      const savedSessions = localStorage.getItem('interview_oracle_pro_sessions');
+      this.savedSessions = savedSessions ? JSON.parse(savedSessions) : [];
 
-    // Update tab content
+      const savedStats = localStorage.getItem('interview_oracle_pro_stats');
+      this.stats = savedStats ? { ...this.getDefaultStats(), ...JSON.parse(savedStats) } : this.getDefaultStats();
+
+      console.log('Loaded saved data:', { sessions: this.savedSessions.length, stats: this.stats });
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+      this.showError('Failed to load saved data');
+    }
+  }
+
+  // ===== TAB MANAGEMENT =====
+
+  showTab(tabName) {
+    // Update active tab
+    this.activeTab = tabName;
+
+    // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
       content.classList.remove('active');
     });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
 
-    this.currentTab = tabName;
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const targetTab = document.getElementById(`${tabName}-tab`);
+    if (targetTab) {
+      targetTab.classList.add('active');
+    }
+
+    // Add active class to selected tab button
+    const targetButton = document.querySelector(`[data-tab="${tabName}"]`);
+    if (targetButton) {
+      targetButton.classList.add('active');
+    }
 
     // Load tab-specific content
-    switch (tabName) {
-      case 'saved':
-        this.loadSavedSessions();
-        break;
-      case 'stats':
-        this.updateStatsDisplay();
-        break;
-      case 'answers':
-        this.updateSelectedQuestions();
-        break;
-    }
+    this.loadTabContent(tabName);
 
     // Track analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'tab_switch', { tab_name: tabName });
+    this.trackEvent('tab_viewed', { tab: tabName });
+  }
+
+  loadTabContent(tabName) {
+    switch (tabName) {
+      case 'saved':
+        this.displaySavedSessions();
+        break;
+      case 'stats':
+        this.displayStats();
+        break;
+      case 'answers':
+        this.updateSelectedQuestionsPreview();
+        break;
+      case 'practice':
+        this.loadPracticeOptions();
+        break;
     }
   }
 
-  // ==================== FORM HANDLING ====================
-  updateCharCounter(event) {
-    const length = event.target.value.length;
-    const counter = document.getElementById('charCounter');
-    const maxLength = 3000;
+  // ===== QUESTION GENERATION =====
 
-    counter.textContent = `${length} / ${maxLength}`;
-    counter.classList.remove('warning', 'error');
-
-    if (length > maxLength * 0.8) {
-      counter.classList.add('warning');
-    }
-    if (length >= maxLength) {
-      counter.classList.add('error');
-    }
-  }
-
-  // ==================== QUESTION GENERATION ====================
   async generateQuestions() {
+    if (!this.validateQuestionInput()) {
+      return;
+    }
+
+    const formData = this.getQuestionFormData();
+
+    this.showLoading(true, 'Analyzing job description and generating personalized questions...');
+
+    try {
+      console.log('Generating questions with data:', formData);
+
+      const response = await fetch('/.netlify/functions/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Questions generated successfully:', result);
+
+      this.currentQuestions = result;
+      this.selectedQuestions.clear();
+      this.displayQuestions();
+      this.showQuestionsResults();
+
+      // Update stats
+      const totalQuestions = this.getTotalQuestionCount();
+      this.stats.totalQuestions += totalQuestions;
+      this.stats.lastActivity = new Date().toISOString();
+      this.saveStats();
+
+      this.trackEvent('questions_generated', {
+        role: formData.role,
+        experience_level: formData.experienceLevel,
+        question_count: totalQuestions
+      });
+
+    } catch (error) {
+      console.error('Question generation error:', error);
+      this.showError(`Failed to generate questions: ${error.message}`);
+    } finally {
+      this.showLoading(false);
+    }
+  }
+
+  validateQuestionInput() {
     const jobDescription = document.getElementById('jobDescription').value.trim();
     const role = document.getElementById('roleSelector').value;
     const experienceLevel = document.getElementById('experienceLevel').value;
-    const companyName = document.getElementById('companyName').value.trim();
 
     if (!jobDescription) {
-      this.showError('Please paste a job description');
-      return;
+      this.showError('Please provide a job description');
+      document.getElementById('jobDescription').focus();
+      return false;
     }
 
     if (jobDescription.length < 50) {
       this.showError('Please provide a more detailed job description (at least 50 characters)');
-      return;
+      document.getElementById('jobDescription').focus();
+      return false;
     }
 
-    // Show loading state
-    this.setLoadingState(true);
-
-    try {
-      const response = await fetch('/.netlify/functions/generate-questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobDescription,
-          role,
-          experienceLevel,
-          companyName
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate questions');
-      }
-
-      const result = await response.json();
-      this.currentQuestions = result;
-
-      this.displayQuestions();
-      this.showResults();
-
-      // Update stats
-      this.stats.totalQuestions += (result.behavioral?.length || 0) +
-                                   (result.technical?.length || 0) +
-                                   (result.company?.length || 0);
-      this.saveStats();
-
-      // Track analytics
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'questions_generated', {
-          role: role,
-          experience_level: experienceLevel,
-          question_count: this.getTotalQuestionCount()
-        });
-      }
-
-    } catch (error) {
-      console.error('Question generation error:', error);
-      this.showError('An error occurred generating questions. Please try again.');
-    } finally {
-      this.setLoadingState(false);
+    if (!role) {
+      this.showError('Please select a role category');
+      document.getElementById('roleSelector').focus();
+      return false;
     }
+
+    if (!experienceLevel) {
+      this.showError('Please select your experience level');
+      document.getElementById('experienceLevel').focus();
+      return false;
+    }
+
+    return true;
+  }
+
+  getQuestionFormData() {
+    return {
+      jobDescription: document.getElementById('jobDescription').value.trim(),
+      role: document.getElementById('roleSelector').value,
+      experienceLevel: document.getElementById('experienceLevel').value,
+      companyName: document.getElementById('companyName').value.trim()
+    };
   }
 
   displayQuestions() {
-    this.displayQuestionCategory('behavioralQuestions', this.currentQuestions.behavioral || []);
-    this.displayQuestionCategory('technicalQuestions', this.currentQuestions.technical || []);
-    this.displayQuestionCategory('companyQuestions', this.currentQuestions.company || []);
-  }
-
-  displayQuestionCategory(elementId, questions) {
-    const container = document.getElementById(elementId);
+    const container = document.getElementById('questionCategories');
     if (!container) return;
 
     container.innerHTML = '';
-    questions.forEach((q, i) => {
-      const li = document.createElement('li');
-      li.className = 'question-item';
-      li.innerHTML = `
-        <input type="checkbox" class="question-checkbox" data-category="${elementId.replace('Questions', '')}" data-index="${i}">
-        <div class="question-number">Question ${i + 1}</div>
-        <div class="question-text">${q.text}</div>
-        <div class="question-meta">
-          <span class="confidence-tag">${q.confidence}</span>
-          <span class="difficulty-tag">PRO</span>
-        </div>
-      `;
-      container.appendChild(li);
 
-      // Add checkbox listener
-      const checkbox = li.querySelector('.question-checkbox');
-      checkbox.addEventListener('change', (e) => this.handleQuestionSelect(e));
+    const categories = [
+      {
+        key: 'behavioral',
+        title: 'Behavioral Questions',
+        icon: '💭',
+        description: 'Assess soft skills, experience, and cultural fit'
+      },
+      {
+        key: 'technical',
+        title: 'Technical/Role-Specific Questions',
+        icon: '🔧',
+        description: 'Evaluate hard skills and domain knowledge'
+      },
+      {
+        key: 'company',
+        title: 'Company-Specific Questions',
+        icon: '🏢',
+        description: 'Focus on organization and role context'
+      }
+    ];
+
+    categories.forEach(category => {
+      const questions = this.currentQuestions[category.key] || [];
+      if (questions.length === 0) return;
+
+      const categoryDiv = document.createElement('div');
+      categoryDiv.className = 'question-category';
+      categoryDiv.innerHTML = `
+        <div class="category-header">
+          <h3 class="category-title">
+            <span class="category-icon">${category.icon}</span>
+            ${category.title}
+          </h3>
+          <button class="select-category-button" data-category="${category.key}">
+            Select All
+          </button>
+        </div>
+        <div class="question-list" id="${category.key}Questions"></div>
+      `;
+
+      container.appendChild(categoryDiv);
+      this.displayCategoryQuestions(category.key, questions);
     });
   }
 
-  handleQuestionSelect(event) {
+  displayCategoryQuestions(category, questions) {
+    const container = document.getElementById(`${category}Questions`);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    questions.forEach((question, index) => {
+      const questionCard = document.createElement('div');
+      questionCard.className = 'question-card';
+      questionCard.innerHTML = `
+        <div class="question-content">
+          <input
+            type="checkbox"
+            class="question-checkbox"
+            id="q_${category}_${index}"
+            data-category="${category}"
+            data-index="${index}"
+          >
+          <div class="question-details">
+            <div class="question-number">Question ${index + 1}</div>
+            <div class="question-text">${this.sanitizeInput(question.text)}</div>
+            <div class="question-meta">
+              <span class="confidence-tag">${question.confidence}</span>
+              <span class="difficulty-tag">PRO</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(questionCard);
+    });
+  }
+
+  showQuestionsResults() {
+    const resultsSection = document.getElementById('questionsResults');
+    if (resultsSection) {
+      resultsSection.classList.remove('hidden');
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // ===== QUESTION SELECTION =====
+
+  handleQuestionSelection(event) {
     const checkbox = event.target;
-    const questionId = `${checkbox.dataset.category}-${checkbox.dataset.index}`;
-    const questionItem = checkbox.closest('.question-item');
+    const category = checkbox.dataset.category;
+    const index = checkbox.dataset.index;
+    const questionId = `${category}_${index}`;
+    const questionCard = checkbox.closest('.question-card');
 
     if (checkbox.checked) {
       this.selectedQuestions.add(questionId);
-      questionItem.classList.add('selected');
+      questionCard.classList.add('selected');
     } else {
       this.selectedQuestions.delete(questionId);
-      questionItem.classList.remove('selected');
+      questionCard.classList.remove('selected');
     }
 
-    this.updateSelectedQuestions();
+    this.updateSelectedQuestionsPreview();
+    console.log('Selected questions:', Array.from(this.selectedQuestions));
   }
 
   selectAllQuestions() {
@@ -271,131 +407,138 @@ class InterviewOraclePro {
 
     checkboxes.forEach(checkbox => {
       checkbox.checked = !allSelected;
-      this.handleQuestionSelect({ target: checkbox });
+      checkbox.dispatchEvent(new Event('change'));
     });
   }
 
-  selectCategory(category) {
+  selectCategoryQuestions(category) {
     const checkboxes = document.querySelectorAll(`[data-category="${category}"]`);
     const allSelected = Array.from(checkboxes).every(cb => cb.checked);
 
     checkboxes.forEach(checkbox => {
       checkbox.checked = !allSelected;
-      this.handleQuestionSelect({ target: checkbox });
+      checkbox.dispatchEvent(new Event('change'));
     });
   }
 
-  // ==================== ANSWER GENERATION ====================
-  updateSelectedQuestions() {
-    const container = document.getElementById('selectedQuestions');
+  getSelectedQuestions() {
+    const selected = [];
+    this.selectedQuestions.forEach(questionId => {
+      const [category, index] = questionId.split('_');
+      const question = this.currentQuestions[category]?.[parseInt(index)];
+      if (question) {
+        selected.push({
+          id: questionId,
+          category,
+          index: parseInt(index),
+          text: question.text,
+          confidence: question.confidence
+        });
+      }
+    });
+    return selected;
+  }
+
+  updateSelectedQuestionsPreview() {
+    const container = document.getElementById('selectedQuestionsPreview');
     const styleSelector = document.getElementById('answerStyleSelector');
 
-    if (this.selectedQuestions.size === 0) {
+    if (!container) return;
+
+    const selectedQuestions = this.getSelectedQuestions();
+
+    if (selectedQuestions.length === 0) {
       container.innerHTML = '<p class="no-selection">Select questions from the Generate tab to create SOAR answers.</p>';
-      styleSelector.style.display = 'none';
+      styleSelector?.classList.add('hidden');
       return;
     }
 
-    styleSelector.style.display = 'block';
-
-    const selectedList = this.getSelectedQuestionTexts();
     container.innerHTML = `
-      <h3>Selected Questions (${selectedList.length})</h3>
-      <ul class="selected-question-list">
-        ${selectedList.map((q, i) => `<li>${i + 1}. ${q}</li>`).join('')}
+      <h3>Selected Questions (${selectedQuestions.length})</h3>
+      <ul class="selected-questions-list">
+        ${selectedQuestions.map((q, i) => `
+          <li class="selected-question-item">
+            <span class="question-number">${i + 1}.</span>
+            <span class="question-text">${this.sanitizeInput(q.text)}</span>
+          </li>
+        `).join('')}
       </ul>
     `;
+
+    styleSelector?.classList.remove('hidden');
   }
 
-  getSelectedQuestionTexts() {
-    const questions = [];
-    this.selectedQuestions.forEach(questionId => {
-      const [category, index] = questionId.split('-');
-      const questionData = this.currentQuestions[category]?.[parseInt(index)];
-      if (questionData) {
-        questions.push(questionData.text);
-      }
-    });
-    return questions;
-  }
-
-  selectAnswerStyle(style) {
-    document.querySelectorAll('.style-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.querySelector(`[data-style="${style}"]`).classList.add('active');
-  }
+  // ===== ANSWER GENERATION =====
 
   async generateAnswers() {
-    const selectedQuestionTexts = this.getSelectedQuestionTexts();
-    console.log('Selected questions:', selectedQuestionTexts);
+    const selectedQuestions = this.getSelectedQuestions();
 
-    if (selectedQuestionTexts.length === 0) {
+    if (selectedQuestions.length === 0) {
       this.showError('Please select at least one question to generate answers for.');
       return;
     }
 
-    const jobDescription = document.getElementById('jobDescription').value.trim();
-    const role = document.getElementById('roleSelector').value;
-    const experienceLevel = document.getElementById('experienceLevel').value;
-    const companyName = document.getElementById('companyName').value.trim();
-    const answerStyle = document.querySelector('.style-btn.active')?.dataset.style || 'confident';
+    const formData = this.getQuestionFormData();
+    const answerStyle = this.getSelectedAnswerStyle();
 
-    const requestData = {
-      questions: selectedQuestionTexts,
-      jobDescription,
-      role,
-      experienceLevel,
-      companyName,
-      answerStyle
-    };
-
-    console.log('Generate answers request data:', requestData);
-
-    // Show loading
-    this.setLoadingState(true, 'Generating SOAR answers...');
+    this.showLoading(true, 'Generating SOAR framework answers...');
 
     try {
-      console.log('Making request to /.netlify/functions/generate-answers');
+      console.log('Generating answers for questions:', selectedQuestions);
+
       const response = await fetch('/.netlify/functions/generate-answers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          questions: selectedQuestions.map(q => q.text),
+          jobDescription: formData.jobDescription,
+          role: formData.role,
+          experienceLevel: formData.experienceLevel,
+          companyName: formData.companyName,
+          answerStyle: answerStyle
+        })
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`Failed to generate answers: ${response.status} ${errorText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('API Success Response:', result);
-      this.currentAnswers = result.answers;
+      console.log('Answers generated successfully:', result);
 
+      this.currentAnswers = result.answers;
       this.displayAnswers();
+      this.showTab('answers');
 
       // Update stats
       this.stats.totalAnswers += result.answers.length;
+      this.stats.lastActivity = new Date().toISOString();
       this.saveStats();
 
-      // Track analytics
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'answers_generated', {
-          answer_count: result.answers.length,
-          answer_style: answerStyle
-        });
-      }
+      this.trackEvent('answers_generated', {
+        answer_count: result.answers.length,
+        answer_style: answerStyle
+      });
 
     } catch (error) {
       console.error('Answer generation error:', error);
-      this.showError('An error occurred generating answers. Please try again.');
+      this.showError(`Failed to generate answers: ${error.message}`);
     } finally {
-      this.setLoadingState(false);
+      this.showLoading(false);
     }
+  }
+
+  getSelectedAnswerStyle() {
+    const activeStyleButton = document.querySelector('.style-button.active');
+    return activeStyleButton?.dataset.style || 'confident';
+  }
+
+  selectAnswerStyle(style) {
+    document.querySelectorAll('.style-button').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`[data-style="${style}"]`)?.classList.add('active');
   }
 
   displayAnswers() {
@@ -404,299 +547,114 @@ class InterviewOraclePro {
 
     container.innerHTML = '';
 
-    this.currentAnswers.forEach((answer, i) => {
-      const answerCard = document.createElement('div');
-      answerCard.className = 'answer-card';
-      answerCard.innerHTML = `
-        <div class="answer-question">${answer.question}</div>
+    this.currentAnswers.forEach((answer, index) => {
+      const answerSection = document.createElement('div');
+      answerSection.className = 'answer-section';
+      answerSection.innerHTML = `
+        <div class="answer-question">${this.sanitizeInput(answer.question)}</div>
         <div class="answer-tabs">
-          <button class="answer-tab active" data-answer-type="full" data-answer-index="${i}">Full Answer</button>
-          <button class="answer-tab" data-answer-type="concise" data-answer-index="${i}">Concise</button>
-          <button class="answer-tab" data-answer-type="keyPoints" data-answer-index="${i}">Key Points</button>
+          <button class="answer-tab active" data-answer-index="${index}" data-answer-type="full">
+            Full Answer
+          </button>
+          <button class="answer-tab" data-answer-index="${index}" data-answer-type="concise">
+            Concise
+          </button>
+          <button class="answer-tab" data-answer-index="${index}" data-answer-type="keyPoints">
+            Key Points
+          </button>
         </div>
-        <div class="answer-content" id="answer-content-${i}">
-          <div class="soar-section">
-            <div class="soar-title">Full SOAR Answer (2-3 minutes)</div>
-            <div class="soar-content">${this.formatAnswerText(answer.full)}</div>
-          </div>
+        <div class="answer-content" id="answer-content-${index}">
+          ${this.formatSOARAnswer(answer.full, 'full')}
         </div>
       `;
-      container.appendChild(answerCard);
 
-      // Add tab listeners
-      answerCard.querySelectorAll('.answer-tab').forEach(tab => {
-        tab.addEventListener('click', (e) => this.switchAnswerTab(e));
-      });
+      container.appendChild(answerSection);
     });
   }
 
-  switchAnswerTab(event) {
-    const tab = event.target;
-    const answerIndex = parseInt(tab.dataset.answerIndex);
-    const answerType = tab.dataset.answerType;
-    const answerCard = tab.closest('.answer-card');
+  showAnswerVariation(answerIndex, answerType) {
+    const index = parseInt(answerIndex);
+    const answer = this.currentAnswers[index];
+
+    if (!answer) return;
 
     // Update tab states
-    answerCard.querySelectorAll('.answer-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
+    const answerSection = document.querySelector(`[data-answer-index="${index}"]`).closest('.answer-section');
+    answerSection.querySelectorAll('.answer-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    answerSection.querySelector(`[data-answer-type="${answerType}"]`).classList.add('active');
 
     // Update content
-    const contentContainer = document.getElementById(`answer-content-${answerIndex}`);
-    const answer = this.currentAnswers[answerIndex];
-
-    let content = '';
-    switch (answerType) {
-      case 'full':
-        content = `
-          <div class="soar-section">
-            <div class="soar-title">Full SOAR Answer (2-3 minutes)</div>
-            <div class="soar-content">${this.formatAnswerText(answer.full)}</div>
-          </div>
-        `;
-        break;
-      case 'concise':
-        content = `
-          <div class="soar-section">
-            <div class="soar-title">Concise Answer (30-60 seconds)</div>
-            <div class="soar-content">${this.formatAnswerText(answer.concise)}</div>
-          </div>
-        `;
-        break;
-      case 'keyPoints':
-        content = `
-          <div class="soar-section">
-            <div class="soar-title">Key Points</div>
-            <ul class="key-points-list">
-              ${answer.keyPoints.map(point => `<li>${point}</li>`).join('')}
-            </ul>
-          </div>
-        `;
-        break;
-    }
-
-    contentContainer.innerHTML = content;
+    const contentContainer = document.getElementById(`answer-content-${index}`);
+    contentContainer.innerHTML = this.formatSOARAnswer(answer[answerType], answerType);
   }
 
-  formatAnswerText(text) {
-    // Format SOAR sections if they exist
-    return text
-      .replace(/\*\*(Situation|Obstacles|Actions|Results):\*\*/g, '<div class="soar-title">$1:</div>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(.*)$/, '<p>$1</p>');
-  }
-
-  // ==================== PRACTICE MODE ====================
-  startPractice() {
-    const practiceType = document.querySelector('input[name="practiceType"]:checked').value;
-    const timeLimit = parseInt(document.getElementById('timeLimit').value);
-
-    let practiceQuestions = [];
-
-    switch (practiceType) {
-      case 'behavioral':
-        practiceQuestions = this.currentQuestions.behavioral || [];
-        break;
-      case 'technical':
-        practiceQuestions = [...(this.currentQuestions.technical || []), ...(this.currentQuestions.company || [])];
-        break;
-      case 'all':
-        practiceQuestions = [
-          ...(this.currentQuestions.behavioral || []),
-          ...(this.currentQuestions.technical || []),
-          ...(this.currentQuestions.company || [])
-        ];
-        break;
+  formatSOARAnswer(content, type) {
+    if (type === 'keyPoints') {
+      const points = Array.isArray(content) ? content : [content];
+      return `
+        <div class="key-points-section">
+          <div class="soar-title">Key Talking Points</div>
+          <ul class="key-points-list">
+            ${points.map(point => `<li>${this.sanitizeInput(point)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
     }
 
-    if (practiceQuestions.length === 0) {
-      this.showError('No questions available for practice. Generate questions first.');
+    // For full and concise answers, try to structure as SOAR if possible
+    const cleanContent = this.sanitizeInput(content);
+
+    if (type === 'full') {
+      return `
+        <div class="soar-framework">
+          <div class="soar-title">Full SOAR Answer (2-3 minutes)</div>
+          <div class="soar-content">${cleanContent}</div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="soar-framework">
+        <div class="soar-title">Concise Answer (60-90 seconds)</div>
+        <div class="soar-content">${cleanContent}</div>
+      </div>
+    `;
+  }
+
+  // ===== SESSION MANAGEMENT =====
+
+  saveCurrentSession() {
+    if (this.getTotalQuestionCount() === 0) {
+      this.showError('No questions to save. Generate questions first.');
       return;
     }
 
-    this.practiceSession = {
-      questions: practiceQuestions,
-      currentIndex: 0,
-      timeLimit: timeLimit,
-      startTime: Date.now(),
-      questionTimes: [],
-      isPaused: false,
-      timer: null
-    };
-
-    this.showPracticeSession();
-    this.startQuestionTimer();
-
-    // Update stats
-    this.stats.practiceSessions++;
-    this.saveStats();
-
-    // Track analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'practice_started', {
-        practice_type: practiceType,
-        time_limit: timeLimit,
-        question_count: practiceQuestions.length
-      });
-    }
-  }
-
-  showPracticeSession() {
-    document.getElementById('practiceSetup').style.display = 'none';
-    document.getElementById('practiceSession').style.display = 'block';
-    document.getElementById('practiceComplete').style.display = 'none';
-
-    this.updatePracticeDisplay();
-  }
-
-  updatePracticeDisplay() {
-    const session = this.practiceSession;
-    const currentQuestion = session.questions[session.currentIndex];
-
-    document.getElementById('currentQuestionNum').textContent = session.currentIndex + 1;
-    document.getElementById('totalQuestions').textContent = session.questions.length;
-    document.querySelector('.current-question .question-text').textContent = currentQuestion.text;
-    document.querySelector('.difficulty-tag').textContent = currentQuestion.confidence;
-
-    // Update progress bar
-    const progress = ((session.currentIndex + 1) / session.questions.length) * 100;
-    document.getElementById('progressFill').style.width = `${progress}%`;
-  }
-
-  startQuestionTimer() {
-    if (this.practiceSession.timeLimit === 0) return;
-
-    let timeLeft = this.practiceSession.timeLimit;
-    this.updateTimerDisplay(timeLeft);
-
-    this.practiceSession.timer = setInterval(() => {
-      if (this.practiceSession.isPaused) return;
-
-      timeLeft--;
-      this.updateTimerDisplay(timeLeft);
-
-      if (timeLeft <= 0) {
-        this.nextQuestion();
-      }
-    }, 1000);
-  }
-
-  updateTimerDisplay(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    document.getElementById('practiceTimer').textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  pausePractice() {
-    this.practiceSession.isPaused = !this.practiceSession.isPaused;
-    const pauseBtn = document.getElementById('pauseBtn');
-    pauseBtn.textContent = this.practiceSession.isPaused ? '▶️ Resume' : '⏸️ Pause';
-  }
-
-  nextQuestion() {
-    if (this.practiceSession.timer) {
-      clearInterval(this.practiceSession.timer);
-    }
-
-    this.practiceSession.questionTimes.push(Date.now());
-    this.practiceSession.currentIndex++;
-
-    if (this.practiceSession.currentIndex >= this.practiceSession.questions.length) {
-      this.completePractice();
-    } else {
-      this.updatePracticeDisplay();
-      this.startQuestionTimer();
-    }
-  }
-
-  endPractice() {
-    if (this.practiceSession.timer) {
-      clearInterval(this.practiceSession.timer);
-    }
-    this.completePractice();
-  }
-
-  completePractice() {
-    const session = this.practiceSession;
-    const endTime = Date.now();
-    const totalDuration = Math.round((endTime - session.startTime) / 1000 / 60); // in minutes
-
-    // Update completion stats
-    document.getElementById('completedQuestions').textContent = session.currentIndex;
-    document.getElementById('averageTime').textContent = session.timeLimit > 0 ?
-      `${Math.floor(session.timeLimit / 60)}:${(session.timeLimit % 60).toString().padStart(2, '0')}` : 'No Limit';
-    document.getElementById('sessionDuration').textContent = `${totalDuration}m`;
-
-    // Show completion screen
-    document.getElementById('practiceSession').style.display = 'none';
-    document.getElementById('practiceComplete').style.display = 'block';
-
-    // Update stats
-    this.stats.practiceTime += totalDuration;
-    this.saveStats();
-
-    // Track analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'practice_completed', {
-        completed_questions: session.currentIndex,
-        total_duration: totalDuration
-      });
-    }
-  }
-
-  startNewPracticeSession() {
-    document.getElementById('practiceSetup').style.display = 'block';
-    document.getElementById('practiceSession').style.display = 'none';
-    document.getElementById('practiceComplete').style.display = 'none';
-    this.practiceSession = null;
-  }
-
-  // ==================== SESSION MANAGEMENT ====================
-  async saveSession() {
-    const jobDescription = document.getElementById('jobDescription').value.trim();
-    const role = document.getElementById('roleSelector').value;
-    const experienceLevel = document.getElementById('experienceLevel').value;
-    const companyName = document.getElementById('companyName').value.trim();
-
-    if (!jobDescription || this.getTotalQuestionCount() === 0) {
-      this.showError('Please generate questions before saving the session.');
-      return;
-    }
-
-    const sessionTitle = `${role}${companyName ? ` at ${companyName}` : ''} - ${new Date().toLocaleDateString()}`;
-
+    const formData = this.getQuestionFormData();
     const sessionData = {
-      title: sessionTitle,
-      jobDescription,
-      role,
-      experienceLevel,
-      companyName,
+      id: this.generateSessionId(),
+      ...formData,
       questions: this.getAllQuestions(),
-      answers: this.currentAnswers
+      answers: this.currentAnswers,
+      selectedQuestions: Array.from(this.selectedQuestions),
+      createdAt: new Date().toISOString()
     };
 
     try {
-      // In a real implementation, this would call the save-session API
-      // For now, we'll save to localStorage
-      const sessionId = this.generateSessionId();
-      const session = {
-        id: sessionId,
-        ...sessionData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      this.savedSessions.push(session);
+      this.savedSessions.push(sessionData);
       this.saveSessions();
 
-      this.showSuccess('Session saved successfully!');
+      // Update stats
+      this.stats.savedCount = this.savedSessions.length;
+      this.saveStats();
 
-      // Track analytics
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'session_saved', {
-          question_count: this.getTotalQuestionCount(),
-          has_answers: this.currentAnswers.length > 0
-        });
-      }
+      this.showSuccessMessage('Session saved successfully!');
+
+      this.trackEvent('session_saved', {
+        question_count: this.getTotalQuestionCount(),
+        has_answers: this.currentAnswers.length > 0
+      });
 
     } catch (error) {
       console.error('Session save error:', error);
@@ -704,356 +662,238 @@ class InterviewOraclePro {
     }
   }
 
-  async loadSavedSessions() {
+  generateSessionId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+
+  getAllQuestions() {
+    const allQuestions = [];
+    Object.entries(this.currentQuestions).forEach(([category, questions]) => {
+      questions.forEach((question, index) => {
+        allQuestions.push({
+          ...question,
+          category,
+          index
+        });
+      });
+    });
+    return allQuestions;
+  }
+
+  displaySavedSessions() {
     const container = document.getElementById('savedSessions');
-    const emptyState = document.getElementById('emptySaved');
+    const emptyState = document.getElementById('emptySavedSessions');
 
     if (!container) return;
 
-    this.savedSessions = this.loadSessions();
-
     if (this.savedSessions.length === 0) {
-      container.style.display = 'none';
-      emptyState.style.display = 'block';
+      container.innerHTML = '';
+      emptyState?.classList.remove('hidden');
       return;
     }
 
-    container.style.display = 'grid';
-    emptyState.style.display = 'none';
+    emptyState?.classList.add('hidden');
 
-    container.innerHTML = '';
-
-    this.savedSessions.forEach(session => {
-      const sessionCard = document.createElement('div');
-      sessionCard.className = 'session-card';
-      sessionCard.innerHTML = `
+    container.innerHTML = this.savedSessions.map(session => `
+      <div class="session-card" onclick="app.loadSession('${session.id}')">
         <div class="session-header">
-          <div>
-            <div class="session-title">${session.title}</div>
-            <div class="session-date">${new Date(session.createdAt).toLocaleDateString()}</div>
-          </div>
-          <span class="session-type">${session.role}</span>
+          <h3 class="session-title">${session.role} - ${session.experienceLevel}</h3>
+          <div class="session-date">${this.formatDate(session.createdAt)}</div>
         </div>
-        <div class="session-meta">
-          <div class="session-stat">
-            <div class="session-stat-number">${session.questions?.length || 0}</div>
-            <div class="session-stat-label">Questions</div>
-          </div>
-          <div class="session-stat">
-            <div class="session-stat-number">${session.answers?.length || 0}</div>
-            <div class="session-stat-label">Answers</div>
-          </div>
-          <div class="session-stat">
-            <div class="session-stat-number">${session.experienceLevel?.split(' ')[0] || 'N/A'}</div>
-            <div class="session-stat-label">Level</div>
-          </div>
+        <div class="session-stats">
+          <span class="session-stat">
+            <strong>${session.questions?.length || 0}</strong> Questions
+          </span>
+          <span class="session-stat">
+            <strong>${session.answers?.length || 0}</strong> Answers
+          </span>
         </div>
-        <div class="session-actions">
-          <button class="session-btn" onclick="app.viewSession('${session.id}')">View</button>
-          <button class="session-btn" onclick="app.practiceSession('${session.id}')">Practice</button>
-          <button class="session-btn primary" onclick="app.exportSession('${session.id}')">Export</button>
-          <button class="session-btn" onclick="app.deleteSession('${session.id}')" style="color: var(--accent-red);">Delete</button>
-        </div>
-      `;
-      container.appendChild(sessionCard);
-    });
-
-    // Update saved count in stats
-    this.stats.savedCount = this.savedSessions.length;
-    this.saveStats();
-  }
-
-  viewSession(sessionId) {
-    const session = this.savedSessions.find(s => s.id === sessionId);
-    if (!session) return;
-
-    // Load session data into generate tab
-    document.getElementById('jobDescription').value = session.jobDescription;
-    document.getElementById('roleSelector').value = session.role;
-    document.getElementById('experienceLevel').value = session.experienceLevel || 'Mid Level';
-    document.getElementById('companyName').value = session.companyName || '';
-
-    // Set current questions and answers
-    this.currentQuestions = {
-      behavioral: session.questions.filter(q => q.category === 'behavioral') || [],
-      technical: session.questions.filter(q => q.category === 'technical') || [],
-      company: session.questions.filter(q => q.category === 'company') || []
-    };
-    this.currentAnswers = session.answers || [];
-
-    // Switch to generate tab and display
-    this.switchTab('generate');
-    this.displayQuestions();
-    this.showResults();
-  }
-
-  practiceSession(sessionId) {
-    this.viewSession(sessionId);
-    this.switchTab('practice');
-  }
-
-  async exportSession(sessionId) {
-    const session = this.savedSessions.find(s => s.id === sessionId);
-    if (!session) return;
-
-    // Create export content
-    const content = this.generateExportContent(session);
-
-    // Create and download file
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${session.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    // Track analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'session_exported', { session_id: sessionId });
-    }
-  }
-
-  deleteSession(sessionId) {
-    if (!confirm('Are you sure you want to delete this session?')) return;
-
-    this.savedSessions = this.savedSessions.filter(s => s.id !== sessionId);
-    this.saveSessions();
-    this.loadSavedSessions();
-
-    // Track analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'session_deleted', { session_id: sessionId });
-    }
-  }
-
-  generateExportContent(session) {
-    let content = `INTERVIEW ORACLE PRO - SAVED SESSION\n`;
-    content += `=====================================\n\n`;
-    content += `Title: ${session.title}\n`;
-    content += `Role: ${session.role}\n`;
-    content += `Experience Level: ${session.experienceLevel}\n`;
-    content += `Company: ${session.companyName || 'N/A'}\n`;
-    content += `Created: ${new Date(session.createdAt).toLocaleDateString()}\n\n`;
-
-    content += `JOB DESCRIPTION:\n`;
-    content += `${session.jobDescription}\n\n`;
-
-    content += `INTERVIEW QUESTIONS:\n`;
-    content += `===================\n\n`;
-
-    if (session.questions && session.questions.length > 0) {
-      session.questions.forEach((q, i) => {
-        content += `${i + 1}. ${q.text || q}\n`;
-        if (q.confidence) content += `   Confidence: ${q.confidence}\n`;
-        content += `\n`;
-      });
-    }
-
-    if (session.answers && session.answers.length > 0) {
-      content += `SOAR ANSWERS:\n`;
-      content += `============\n\n`;
-
-      session.answers.forEach((answer, i) => {
-        content += `${i + 1}. ${answer.question}\n`;
-        content += `${'-'.repeat(answer.question.length + 3)}\n\n`;
-        content += `FULL ANSWER:\n${answer.full}\n\n`;
-        content += `CONCISE ANSWER:\n${answer.concise}\n\n`;
-        content += `KEY POINTS:\n`;
-        answer.keyPoints.forEach(point => content += `• ${point}\n`);
-        content += `\n`;
-      });
-    }
-
-    return content;
-  }
-
-  // ==================== STATS & ANALYTICS ====================
-  updateStatsDisplay() {
-    const stats = this.stats;
-
-    document.getElementById('totalQuestions').textContent = stats.totalQuestions;
-    document.getElementById('totalAnswers').textContent = stats.totalAnswers;
-    document.getElementById('practiceSessions').textContent = stats.practiceSessions;
-    document.getElementById('practiceTime').textContent = `${stats.practiceTime}h`;
-    document.getElementById('savedCount').textContent = stats.savedCount;
-    document.getElementById('streakDays').textContent = stats.streakDays;
-
-    this.updateActivityTimeline();
-  }
-
-  updateActivityTimeline() {
-    const timeline = document.getElementById('activityTimeline');
-    if (!timeline) return;
-
-    // Mock activity data - in a real app, this would come from a database
-    const activities = [
-      {
-        icon: '⚡',
-        title: 'Generated questions for Software Engineer role',
-        time: '2 hours ago'
-      },
-      {
-        icon: '💡',
-        title: 'Created SOAR answers for 5 questions',
-        time: '1 day ago'
-      },
-      {
-        icon: '🎯',
-        title: 'Completed practice session (8 questions)',
-        time: '2 days ago'
-      },
-      {
-        icon: '💾',
-        title: 'Saved session: Product Manager at Google',
-        time: '3 days ago'
-      }
-    ];
-
-    timeline.innerHTML = activities.map(activity => `
-      <div class="activity-item">
-        <div class="activity-icon">${activity.icon}</div>
-        <div class="activity-content">
-          <div class="activity-title">${activity.title}</div>
-          <div class="activity-time">${activity.time}</div>
+        <div class="session-actions" onclick="event.stopPropagation()">
+          <button class="action-button" onclick="app.loadSession('${session.id}')">
+            Load Session
+          </button>
+          <button class="action-button" onclick="app.deleteSession('${session.id}')">
+            Delete
+          </button>
         </div>
       </div>
     `).join('');
   }
 
-  // ==================== UTILITY METHODS ====================
-  setLoadingState(isLoading, message = 'Analyzing job description and generating personalized questions...') {
-    const loading = document.getElementById('loading');
-    const loadingText = document.querySelector('.loading-text');
-    const predictButton = document.getElementById('predictButton');
-
-    if (loading) {
-      if (isLoading) {
-        loading.classList.add('active');
-        if (loadingText) loadingText.textContent = message;
-      } else {
-        loading.classList.remove('active');
-      }
+  loadSession(sessionId) {
+    const session = this.savedSessions.find(s => s.id === sessionId);
+    if (!session) {
+      this.showError('Session not found');
+      return;
     }
 
-    if (predictButton) {
-      predictButton.disabled = isLoading;
+    // Restore form data
+    document.getElementById('jobDescription').value = session.jobDescription || '';
+    document.getElementById('roleSelector').value = session.role || '';
+    document.getElementById('experienceLevel').value = session.experienceLevel || '';
+    document.getElementById('companyName').value = session.companyName || '';
+
+    // Restore questions and answers
+    this.currentQuestions = {
+      behavioral: session.questions?.filter(q => q.category === 'behavioral') || [],
+      technical: session.questions?.filter(q => q.category === 'technical') || [],
+      company: session.questions?.filter(q => q.category === 'company') || []
+    };
+
+    this.currentAnswers = session.answers || [];
+    this.selectedQuestions = new Set(session.selectedQuestions || []);
+
+    // Switch to generate tab and display
+    this.showTab('generate');
+    this.displayQuestions();
+    this.showQuestionsResults();
+
+    this.showSuccessMessage('Session loaded successfully!');
+
+    this.trackEvent('session_loaded', { session_id: sessionId });
+  }
+
+  deleteSession(sessionId) {
+    if (!confirm('Are you sure you want to delete this session?')) {
+      return;
     }
+
+    this.savedSessions = this.savedSessions.filter(s => s.id !== sessionId);
+    this.saveSessions();
+
+    // Update stats
+    this.stats.savedCount = this.savedSessions.length;
+    this.saveStats();
+
+    this.displaySavedSessions();
+    this.showSuccessMessage('Session deleted successfully!');
+
+    this.trackEvent('session_deleted', { session_id: sessionId });
   }
 
-  showResults() {
-    const resultsSection = document.getElementById('resultsSection');
-    if (resultsSection) {
-      resultsSection.classList.add('active');
+  // ===== PRACTICE MODE =====
+
+  startPracticeMode() {
+    if (this.getTotalQuestionCount() === 0) {
+      this.showError('No questions available for practice. Generate questions first.');
+      return;
     }
-  }
 
-  showError(message) {
-    const errorDiv = document.getElementById('errorMessage');
-    if (errorDiv) {
-      errorDiv.textContent = message;
-      errorDiv.classList.add('active');
-      setTimeout(() => errorDiv.classList.remove('active'), 5000);
-    } else {
-      alert(message);
-    }
-  }
+    const practiceType = document.querySelector('input[name="practiceType"]:checked')?.value || 'all';
+    const timeLimit = parseInt(document.getElementById('timeLimit').value) || 120;
 
-  showSuccess(message) {
-    // Create temporary success notification
-    const notification = document.createElement('div');
-    notification.className = 'success-notification';
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 2rem;
-      right: 2rem;
-      background: var(--accent-green);
-      color: white;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      font-weight: 600;
-      z-index: 1000;
-      animation: fadeInUp 0.3s ease-out;
-    `;
+    this.practiceSession = {
+      questions: this.getPracticeQuestions(practiceType),
+      currentIndex: 0,
+      timeLimit: timeLimit,
+      startTime: Date.now(),
+      completedQuestions: 0
+    };
 
-    document.body.appendChild(notification);
+    this.displayPracticeSession();
 
-    setTimeout(() => {
-      notification.style.animation = 'fadeOutUp 0.3s ease-out';
-      setTimeout(() => notification.remove(), 300);
-    }, 3000);
-  }
-
-  getTotalQuestionCount() {
-    return (this.currentQuestions.behavioral?.length || 0) +
-           (this.currentQuestions.technical?.length || 0) +
-           (this.currentQuestions.company?.length || 0);
-  }
-
-  getAllQuestions() {
-    const questions = [];
-
-    ['behavioral', 'technical', 'company'].forEach(category => {
-      if (this.currentQuestions[category]) {
-        this.currentQuestions[category].forEach(q => {
-          questions.push({
-            ...q,
-            category
-          });
-        });
-      }
+    this.trackEvent('practice_started', {
+      question_count: this.practiceSession.questions.length,
+      time_limit: timeLimit,
+      practice_type: practiceType
     });
-
-    return questions;
   }
 
-  generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  getPracticeQuestions(practiceType) {
+    let questions = [];
+
+    if (practiceType === 'all') {
+      questions = this.getAllQuestions();
+    } else {
+      questions = (this.currentQuestions[practiceType] || []).map((q, index) => ({
+        ...q,
+        category: practiceType,
+        index
+      }));
+    }
+
+    // Shuffle questions
+    return questions.sort(() => Math.random() - 0.5);
   }
 
-  checkMemberStatus() {
-    // In a real implementation, this would check authentication
-    const memberName = 'PRO Member';
-    document.getElementById('memberName').textContent = memberName;
+  displayPracticeSession() {
+    const container = document.getElementById('practiceSession');
+    const setupContainer = document.getElementById('practiceSetup');
+
+    if (!container) return;
+
+    setupContainer.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    // Practice session UI will be implemented here
+    container.innerHTML = `
+      <div class="practice-interface">
+        <div class="practice-header">
+          <h3>Practice Session Active</h3>
+          <p>Question ${this.practiceSession.currentIndex + 1} of ${this.practiceSession.questions.length}</p>
+        </div>
+        <div class="practice-content">
+          <p>Practice mode implementation coming soon...</p>
+        </div>
+      </div>
+    `;
   }
 
-  // ==================== LOCAL STORAGE ====================
-  loadStats() {
-    const defaultStats = {
+  // ===== STATS TRACKING =====
+
+  displayStats() {
+    const statsGrid = document.getElementById('statsGrid');
+    if (!statsGrid) return;
+
+    const stats = [
+      { label: 'Questions Generated', value: this.stats.totalQuestions, icon: '⚡' },
+      { label: 'SOAR Answers Created', value: this.stats.totalAnswers, icon: '💡' },
+      { label: 'Practice Sessions', value: this.stats.practiceSessions, icon: '🎯' },
+      { label: 'Saved Sessions', value: this.stats.savedCount, icon: '💾' },
+      { label: 'Days Active', value: this.calculateDaysActive(), icon: '📅' },
+      { label: 'Success Rate', value: this.calculateSuccessRate() + '%', icon: '📈' }
+    ];
+
+    statsGrid.innerHTML = stats.map(stat => `
+      <div class="stat-card">
+        <div class="stat-icon">${stat.icon}</div>
+        <div class="stat-number">${stat.value}</div>
+        <div class="stat-label">${stat.label}</div>
+      </div>
+    `).join('');
+  }
+
+  calculateDaysActive() {
+    if (!this.stats.firstActivity) return 0;
+    const first = new Date(this.stats.firstActivity);
+    const now = new Date();
+    return Math.ceil((now - first) / (1000 * 60 * 60 * 24));
+  }
+
+  calculateSuccessRate() {
+    if (this.stats.totalQuestions === 0) return 0;
+    return Math.round((this.stats.totalAnswers / this.stats.totalQuestions) * 100);
+  }
+
+  getDefaultStats() {
+    return {
       totalQuestions: 0,
       totalAnswers: 0,
       practiceSessions: 0,
-      practiceTime: 0,
       savedCount: 0,
-      streakDays: 0,
-      lastActiveDate: null
+      firstActivity: null,
+      lastActivity: null
     };
-
-    try {
-      const stored = localStorage.getItem('interview_oracle_pro_stats');
-      return stored ? { ...defaultStats, ...JSON.parse(stored) } : defaultStats;
-    } catch (error) {
-      console.error('Error loading stats:', error);
-      return defaultStats;
-    }
   }
 
   saveStats() {
     try {
+      if (!this.stats.firstActivity) {
+        this.stats.firstActivity = new Date().toISOString();
+      }
       localStorage.setItem('interview_oracle_pro_stats', JSON.stringify(this.stats));
     } catch (error) {
       console.error('Error saving stats:', error);
-    }
-  }
-
-  loadSessions() {
-    try {
-      const stored = localStorage.getItem('interview_oracle_pro_sessions');
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Error loading sessions:', error);
-      return [];
     }
   }
 
@@ -1064,10 +904,111 @@ class InterviewOraclePro {
       console.error('Error saving sessions:', error);
     }
   }
+
+  // ===== UTILITY FUNCTIONS =====
+
+  showError(message) {
+    const errorElement = document.getElementById('globalError');
+    if (errorElement) {
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        errorElement.classList.add('hidden');
+      }, 5000);
+    }
+    console.error('Error:', message);
+  }
+
+  showSuccessMessage(message) {
+    // Create or update success message element
+    let successElement = document.getElementById('globalSuccess');
+    if (!successElement) {
+      successElement = document.createElement('div');
+      successElement.id = 'globalSuccess';
+      successElement.className = 'success-message';
+      successElement.style.cssText = `
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      `;
+      successElement.innerHTML = '<span>✅</span><span class="message-text"></span>';
+      document.querySelector('.main-content').prepend(successElement);
+    }
+
+    successElement.querySelector('.message-text').textContent = message;
+    successElement.classList.remove('hidden');
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      successElement.classList.add('hidden');
+    }, 3000);
+  }
+
+  showLoading(state, message = 'Processing...') {
+    const loadingElement = document.getElementById('globalLoading');
+    const loadingText = document.getElementById('loadingText');
+
+    if (loadingElement) {
+      if (state) {
+        loadingElement.classList.remove('hidden');
+        if (loadingText) {
+          loadingText.textContent = message;
+        }
+      } else {
+        loadingElement.classList.add('hidden');
+      }
+    }
+  }
+
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  sanitizeInput(text) {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+  }
+
+  getTotalQuestionCount() {
+    return Object.values(this.currentQuestions).reduce((total, questions) => total + questions.length, 0);
+  }
+
+  trackEvent(eventName, properties = {}) {
+    // Google Analytics tracking
+    if (typeof gtag !== 'undefined') {
+      gtag('event', eventName, properties);
+    }
+
+    console.log('Event tracked:', eventName, properties);
+  }
+
+  loadPracticeOptions() {
+    // Initialize practice options if needed
+    console.log('Practice options loaded');
+  }
 }
 
-// Initialize the application
-let app;
+// Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  app = new InterviewOraclePro();
+  window.app = new InterviewOraclePro();
 });
