@@ -618,71 +618,6 @@ body {
   font-weight: bold;
 }
 
-/* ===== PRACTICE MODE ===== */
-.practice-options {
-  background: #192734;
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-}
-
-.option-group {
-  margin-bottom: 1.5rem;
-}
-
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: background 0.2s ease;
-}
-
-.radio-option:hover {
-  background: rgba(46, 177, 188, 0.05);
-}
-
-.radio-button {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #3A4B5C;
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.radio-option input[type="radio"] {
-  display: none;
-}
-
-.radio-option input[type="radio"]:checked + .radio-button {
-  border-color: #2EB1BC;
-}
-
-.radio-option input[type="radio"]:checked + .radio-button:after {
-  content: "";
-  width: 8px;
-  height: 8px;
-  background: #2EB1BC;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.radio-label {
-  color: #E1E8ED;
-  font-weight: 500;
-}
 
 /* ===== SAVED SESSIONS ===== */
 .saved-sessions {
@@ -905,8 +840,7 @@ body {
   }
 
   .question-form,
-  .answer-section,
-  .practice-options {
+  .answer-section {
     padding: 1.5rem;
   }
 

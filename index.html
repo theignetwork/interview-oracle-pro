@@ -46,10 +46,6 @@
         <span class="tab-icon">💡</span>
         <span class="tab-label">Answers</span>
       </button>
-      <button class="tab-button" data-tab="practice">
-        <span class="tab-icon">🎯</span>
-        <span class="tab-label">Practice</span>
-      </button>
       <button class="tab-button" data-tab="saved">
         <span class="tab-icon">💾</span>
         <span class="tab-label">Saved</span>
@@ -198,63 +194,12 @@
         </div>
       </section>
 
-      <!-- Practice Mode Tab -->
-      <section class="tab-content" id="practice-tab">
-        <div class="content-header">
-          <h2 class="section-title">Practice Mode</h2>
-          <p class="section-description">Practice your answers with timer and recording simulation</p>
-        </div>
-
-        <div class="practice-setup" id="practiceSetup">
-          <div class="practice-options">
-            <div class="option-group">
-              <label class="form-label">Question Type</label>
-              <div class="radio-group">
-                <label class="radio-option">
-                  <input type="radio" name="practiceType" value="behavioral" checked>
-                  <span class="radio-button"></span>
-                  <span class="radio-label">Behavioral Questions</span>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="practiceType" value="technical">
-                  <span class="radio-button"></span>
-                  <span class="radio-label">Technical Questions</span>
-                </label>
-                <label class="radio-option">
-                  <input type="radio" name="practiceType" value="all">
-                  <span class="radio-button"></span>
-                  <span class="radio-label">All Questions</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="option-group">
-              <label class="form-label">Time Limit</label>
-              <select id="timeLimit" class="form-select">
-                <option value="120">2 minutes (Standard)</option>
-                <option value="30">30 seconds (Elevator pitch)</option>
-                <option value="180">3 minutes (Detailed)</option>
-                <option value="0">No limit</option>
-              </select>
-            </div>
-          </div>
-
-          <button class="primary-button" id="startPracticeBtn">
-            <span class="button-icon">🎯</span>
-            Start Practice Session
-          </button>
-        </div>
-
-        <div class="practice-session hidden" id="practiceSession">
-          <!-- Practice session UI will be populated by JavaScript -->
-        </div>
-      </section>
 
       <!-- Saved Sessions Tab -->
       <section class="tab-content" id="saved-tab">
         <div class="content-header">
           <h2 class="section-title">Saved Sessions</h2>
-          <p class="section-description">Access your saved interview question sets and practice sessions</p>
+          <p class="section-description">Access your saved interview question sets and SOAR answers</p>
         </div>
 
         <div class="saved-sessions" id="savedSessions">

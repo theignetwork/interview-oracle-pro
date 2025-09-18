@@ -131,10 +131,7 @@ async function saveSession(bodyData, userId, headers) {
     },
     stats: {
       timesViewed: 0,
-      timesPracticed: 0,
-      lastViewed: null,
-      lastPracticed: null,
-      practiceSessionDuration: 0
+      lastViewed: null
     }
   };
 
@@ -319,10 +316,7 @@ function getAllSessionsFromStorage(userId) {
       },
       stats: {
         timesViewed: 3,
-        timesPracticed: 1,
-        lastViewed: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        lastPracticed: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-        practiceSessionDuration: 900 // 15 minutes
+        lastViewed: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
       }
     }
   ];

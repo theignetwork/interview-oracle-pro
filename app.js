@@ -17,9 +17,6 @@ class InterviewOraclePro {
     this.activeTab = 'generate';
     this.stats = this.getDefaultStats();
 
-    // Practice session state
-    this.practiceSession = null;
-    this.practiceTimer = null;
 
     // Initialize application
     this.init();
@@ -98,13 +95,6 @@ class InterviewOraclePro {
       }
     });
 
-    // Practice mode
-    const startPracticeBtn = document.getElementById('startPracticeBtn');
-    if (startPracticeBtn) {
-      startPracticeBtn.addEventListener('click', () => {
-        this.startPracticeMode();
-      });
-    }
 
     // Category selection
     document.addEventListener('click', (e) => {
@@ -187,9 +177,6 @@ class InterviewOraclePro {
         break;
       case 'answers':
         this.updateSelectedQuestionsPreview();
-        break;
-      case 'practice':
-        this.loadPracticeOptions();
         break;
     }
   }
@@ -771,73 +758,6 @@ class InterviewOraclePro {
     this.trackEvent('session_deleted', { session_id: sessionId });
   }
 
-  // ===== PRACTICE MODE =====
-
-  startPracticeMode() {
-    if (this.getTotalQuestionCount() === 0) {
-      this.showError('No questions available for practice. Generate questions first.');
-      return;
-    }
-
-    const practiceType = document.querySelector('input[name="practiceType"]:checked')?.value || 'all';
-    const timeLimit = parseInt(document.getElementById('timeLimit').value) || 120;
-
-    this.practiceSession = {
-      questions: this.getPracticeQuestions(practiceType),
-      currentIndex: 0,
-      timeLimit: timeLimit,
-      startTime: Date.now(),
-      completedQuestions: 0
-    };
-
-    this.displayPracticeSession();
-
-    this.trackEvent('practice_started', {
-      question_count: this.practiceSession.questions.length,
-      time_limit: timeLimit,
-      practice_type: practiceType
-    });
-  }
-
-  getPracticeQuestions(practiceType) {
-    let questions = [];
-
-    if (practiceType === 'all') {
-      questions = this.getAllQuestions();
-    } else {
-      questions = (this.currentQuestions[practiceType] || []).map((q, index) => ({
-        ...q,
-        category: practiceType,
-        index
-      }));
-    }
-
-    // Shuffle questions
-    return questions.sort(() => Math.random() - 0.5);
-  }
-
-  displayPracticeSession() {
-    const container = document.getElementById('practiceSession');
-    const setupContainer = document.getElementById('practiceSetup');
-
-    if (!container) return;
-
-    setupContainer.classList.add('hidden');
-    container.classList.remove('hidden');
-
-    // Practice session UI will be implemented here
-    container.innerHTML = `
-      <div class="practice-interface">
-        <div class="practice-header">
-          <h3>Practice Session Active</h3>
-          <p>Question ${this.practiceSession.currentIndex + 1} of ${this.practiceSession.questions.length}</p>
-        </div>
-        <div class="practice-content">
-          <p>Practice mode implementation coming soon...</p>
-        </div>
-      </div>
-    `;
-  }
 
   // ===== STATS TRACKING =====
 
@@ -848,10 +768,10 @@ class InterviewOraclePro {
     const stats = [
       { label: 'Questions Generated', value: this.stats.totalQuestions, icon: '⚡' },
       { label: 'SOAR Answers Created', value: this.stats.totalAnswers, icon: '💡' },
-      { label: 'Practice Sessions', value: this.stats.practiceSessions, icon: '🎯' },
       { label: 'Saved Sessions', value: this.stats.savedCount, icon: '💾' },
       { label: 'Days Active', value: this.calculateDaysActive(), icon: '📅' },
-      { label: 'Success Rate', value: this.calculateSuccessRate() + '%', icon: '📈' }
+      { label: 'Success Rate', value: this.calculateSuccessRate() + '%', icon: '📈' },
+      { label: 'Total Questions', value: this.getTotalQuestionCount(), icon: '📝' }
     ];
 
     statsGrid.innerHTML = stats.map(stat => `
@@ -879,7 +799,6 @@ class InterviewOraclePro {
     return {
       totalQuestions: 0,
       totalAnswers: 0,
-      practiceSessions: 0,
       savedCount: 0,
       firstActivity: null,
       lastActivity: null
@@ -1002,10 +921,6 @@ class InterviewOraclePro {
     console.log('Event tracked:', eventName, properties);
   }
 
-  loadPracticeOptions() {
-    // Initialize practice options if needed
-    console.log('Practice options loaded');
-  }
 }
 
 // Initialize the application when DOM is loaded
