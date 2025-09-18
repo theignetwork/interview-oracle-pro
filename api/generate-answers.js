@@ -211,43 +211,24 @@ exports.handler = async (event, context) => {
 
     console.log('Starting question classification...');
 
-    // Classify questions and determine methodologies
-    const questionsWithMethodologies = questions.map((question, index) => {
-      console.log(`Classifying question ${index + 1}: "${question}"`);
-      const type = classifyQuestion(question);
-      const framework = getMethodologyFramework(type);
-      console.log(`Result: type=${type}, methodology=${framework.name}`);
-      return {
-        question,
-        type,
-        framework
-      };
-    });
+    // Ultra-simple approach to get basic functionality working
+    console.log('Creating ultra-simple prompt...');
 
-    console.log('All question classifications complete:', questionsWithMethodologies.map(q => ({
-      question: q.question.substring(0, 50) + '...',
-      type: q.type,
-      methodology: q.framework.name
-    })));
-
-    // Create simple, working prompt
-    const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
-
-    const prompt = `Generate professional interview answers for a ${role} position.
+    const prompt = `Generate professional interview answers in JSON format.
 
 Questions:
-${questionsText}
+${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Return only valid JSON in this format:
+Return only JSON:
 {
   "answers": [
     {
-      "question": "exact question text",
+      "question": "first question here",
       "type": "general",
       "methodology": "Professional Response",
-      "full": "Complete 200-word professional answer with specific examples and results",
-      "concise": "Brief 60-word version",
-      "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4", "key point 5"]
+      "full": "200 word professional answer",
+      "concise": "50 word brief answer",
+      "keyPoints": ["point1", "point2", "point3", "point4", "point5"]
     }
   ]
 }`;
@@ -319,71 +300,9 @@ Return only valid JSON in this format:
     const responseText = claudeResponse.content[0].text.trim();
     console.log('Raw Claude response:', responseText.substring(0, 200));
 
-    // Try multiple JSON extraction methods
-    let jsonString = null;
-    let codeBlockMatch = null;
-    let jsonMatch = null;
-
-    console.log('Trying JSON extraction methods...');
-
-    // Method 1: Look for JSON between ```json and ```
-    codeBlockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch) {
-      console.log('Found JSON in code block');
-      jsonString = codeBlockMatch[1].trim();
-    } else {
-      // Method 2: Find the first complete JSON object with proper bracket matching
-      console.log('Looking for properly balanced JSON object...');
-      const startIndex = responseText.indexOf('{');
-      if (startIndex !== -1) {
-        let bracketCount = 0;
-        let endIndex = -1;
-        let inString = false;
-        let escapeNext = false;
-
-        for (let i = startIndex; i < responseText.length; i++) {
-          const char = responseText[i];
-
-          if (escapeNext) {
-            escapeNext = false;
-            continue;
-          }
-
-          if (char === '\\') {
-            escapeNext = true;
-            continue;
-          }
-
-          if (char === '"' && !escapeNext) {
-            inString = !inString;
-            continue;
-          }
-
-          if (!inString) {
-            if (char === '{') {
-              bracketCount++;
-            } else if (char === '}') {
-              bracketCount--;
-              if (bracketCount === 0) {
-                endIndex = i;
-                break;
-              }
-            }
-          }
-        }
-
-        if (endIndex !== -1) {
-          jsonString = responseText.substring(startIndex, endIndex + 1);
-          console.log('Found balanced JSON object, length:', jsonString.length);
-        } else {
-          console.log('Could not find balanced JSON, using entire response');
-          jsonString = responseText;
-        }
-      } else {
-        console.log('No opening brace found, using entire response');
-        jsonString = responseText;
-      }
-    }
+    // Simple JSON extraction
+    console.log('Extracting JSON...');
+    let jsonString = responseText.trim();
 
     console.log('=== JSON PARSING ATTEMPT ===');
     console.log('jsonString length:', jsonString?.length);
@@ -429,7 +348,7 @@ Return only valid JSON in this format:
           responsePreview: responseText.substring(0, 800),
           originalJson: jsonString.substring(0, 400),
           cleanedJson: cleanedJsonString.substring(0, 400),
-          jsonExtractionMethod: codeBlockMatch ? 'code-block' : 'bracket-matching'
+          jsonExtractionMethod: 'simple-trim'
         })
       };
     }
@@ -458,12 +377,11 @@ Return only valid JSON in this format:
     // Validate and clean answers
     const validatedAnswers = parsedAnswers.answers.map((answer, index) => {
       const questionText = questions[index] || `Question ${index + 1}`;
-      const questionMetadata = questionsWithMethodologies[index];
 
       return {
         question: answer.question || questionText,
-        methodology: answer.methodology || questionMetadata?.framework.name || 'Structured Response',
-        type: answer.type || questionMetadata?.type || 'general',
+        methodology: answer.methodology || 'Professional Response',
+        type: answer.type || 'general',
         full: cleanTextContent(answer.full || 'Answer generation failed for this question.'),
         concise: cleanTextContent(answer.concise || answer.brief || answer.short || 'Brief answer generation failed.'),
         keyPoints: Array.isArray(answer.keyPoints) ?
@@ -488,12 +406,7 @@ Return only valid JSON in this format:
           experienceLevel: experienceLevel,
           companyName: companyName,
           generatedAt: new Date().toISOString(),
-          model: 'claude-3-haiku',
-          methodologies: questionsWithMethodologies.map(q => ({
-            question: q.question.substring(0, 50) + '...',
-            type: q.type,
-            methodology: q.framework.name
-          }))
+          model: 'claude-3-haiku'
         }
       })
     };
