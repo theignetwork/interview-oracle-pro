@@ -243,19 +243,23 @@ ${questionsWithMethodologies.map((item, index) => {
    → Approach: ${item.framework.guidance}`;
 }).join('\n\n')}
 
-IMPORTANT: Use the specific methodology for each question. Return only JSON:
+CRITICAL: Return ONLY valid JSON with no extra text, formatting, or control characters. Use the specific methodology for each question.
+
+JSON FORMAT (no newlines in answer content):
 {
   "answers": [
     {
       "question": "exact question text",
       "type": "question_type",
       "methodology": "methodology_name",
-      "full": "200-word answer using the specified methodology",
-      "concise": "60-word condensed version",
+      "full": "200-word answer using the specified methodology - keep all text on single line with no line breaks",
+      "concise": "60-word condensed version - single line only",
       "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4", "key point 5"]
     }
   ]
-}`;
+}
+
+IMPORTANT: Do not include any line breaks, tabs, or special characters within the answer text content.`;
 
     console.log('Prompt created, length:', prompt.length);
     console.log('Prompt preview:', prompt.substring(0, 200));
@@ -343,12 +347,16 @@ IMPORTANT: Use the specific methodology for each question. Return only JSON:
     } catch (parseError) {
       console.log('Original parsing failed, trying with control character cleaning...');
 
-      // Apply minimal cleaning - only remove problematic control characters
+      // Apply comprehensive cleaning for problematic characters
       const cleanedJsonString = jsonString
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars but keep \n and \r
-        .replace(/\n/g, '\\n')     // Escape remaining newlines
-        .replace(/\r/g, '\\r')     // Escape carriage returns
-        .replace(/\t/g, '\\t');    // Escape tabs
+        // Remove all control characters including newlines and tabs within strings
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
+        // Fix common JSON issues
+        .replace(/,\s*}/g, '}')     // Remove trailing commas
+        .replace(/,\s*]/g, ']')     // Remove trailing commas in arrays
+        .replace(/\s+/g, ' ')       // Normalize whitespace
+        .replace(/"\s*:\s*"/g, '":"') // Clean up property spacing
+        .trim()
 
       console.log('Cleaned string preview:', cleanedJsonString.substring(0, 300));
 
@@ -364,18 +372,46 @@ IMPORTANT: Use the specific methodology for each question. Return only JSON:
         console.error('JSON string (first 500 chars):', jsonString.substring(0, 500));
         console.error('Full response (first 1000 chars):', responseText.substring(0, 1000));
 
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: 'Failed to parse Claude response',
-            originalError: parseError.message,
-            cleanedError: secondParseError.message,
-            responsePreview: responseText.substring(0, 800),
-            jsonString: jsonString.substring(0, 400),
-            jsonExtractionMethod: 'simple-trim'
-          })
-        };
+        // Final fallback: Try extracting just the answers array content
+        console.log('Attempting final fallback - manual extraction...');
+        try {
+          const answersMatch = responseText.match(/"answers"\s*:\s*\[([\s\S]*?)\]/);
+          if (answersMatch) {
+            console.log('Found answers array, attempting to create fallback response...');
+            // Create a minimal valid response structure
+            parsedAnswers = {
+              answers: questions.map((question, index) => {
+                const questionMetadata = questionsWithMethodologies[index];
+                return {
+                  question: question,
+                  type: questionMetadata.type,
+                  methodology: questionMetadata.framework.name,
+                  full: "The AI generated an answer, but there was a formatting issue. Please regenerate for a properly formatted response.",
+                  concise: "Answer formatting issue occurred. Please try again.",
+                  keyPoints: ["Regenerate this answer", "Formatting issue detected", "Question classified correctly", "Methodology determined", "Try again for better results"]
+                };
+              })
+            };
+            console.log('Fallback response created successfully');
+          } else {
+            throw new Error('Could not extract answers array from response');
+          }
+        } catch (fallbackError) {
+          console.error('Final fallback failed:', fallbackError.message);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+              error: 'Failed to parse Claude response after all attempts',
+              originalError: parseError.message,
+              cleanedError: secondParseError.message,
+              fallbackError: fallbackError.message,
+              responsePreview: responseText.substring(0, 800),
+              jsonString: jsonString.substring(0, 400),
+              jsonExtractionMethod: 'all-methods-failed'
+            })
+          };
+        }
       }
     }
 
