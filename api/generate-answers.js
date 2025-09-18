@@ -308,25 +308,11 @@ Return only JSON:
     console.log('jsonString length:', jsonString?.length);
     console.log('jsonString preview:', jsonString?.substring(0, 300));
 
-    // Clean the JSON string to fix control character issues
-    console.log('Cleaning JSON string...');
-    const cleanedJsonString = jsonString
-      .replace(/\n/g, '\\n')           // Escape newlines
-      .replace(/\r/g, '\\r')           // Escape carriage returns
-      .replace(/\t/g, '\\t')           // Escape tabs
-      .replace(/\f/g, '\\f')           // Escape form feeds
-      .replace(/\b/g, '\\b')           // Escape backspaces
-      .replace(/[\x00-\x1F\x7F]/g, '') // Remove other control characters
-      .replace(/\\+n/g, '\\n')         // Fix double-escaped newlines
-      .replace(/\\+r/g, '\\r')         // Fix double-escaped carriage returns
-      .replace(/\\+t/g, '\\t');        // Fix double-escaped tabs
-
-    console.log('Cleaned JSON preview:', cleanedJsonString.substring(0, 300));
-
+    // The original JSON from Claude is actually valid, let's try parsing it directly first
     let parsedAnswers;
     try {
-      console.log('Attempting JSON.parse on cleaned string...');
-      parsedAnswers = JSON.parse(cleanedJsonString);
+      console.log('Attempting JSON.parse on original response...');
+      parsedAnswers = JSON.parse(jsonString);
       console.log('JSON parsing successful!');
       console.log('Parsed object keys:', Object.keys(parsedAnswers));
       console.log('Answers array length:', parsedAnswers.answers?.length);
@@ -334,8 +320,7 @@ Return only JSON:
       console.error('=== JSON PARSING FAILED ===');
       console.error('Parse error type:', parseError.constructor.name);
       console.error('Parse error message:', parseError.message);
-      console.error('Original JSON string (first 500 chars):', jsonString.substring(0, 500));
-      console.error('Cleaned JSON string (first 500 chars):', cleanedJsonString.substring(0, 500));
+      console.error('JSON string (first 500 chars):', jsonString.substring(0, 500));
       console.error('Full response (first 1000 chars):', responseText.substring(0, 1000));
 
       return {
@@ -346,8 +331,7 @@ Return only JSON:
           parseErrorType: parseError.constructor.name,
           parseErrorMessage: parseError.message,
           responsePreview: responseText.substring(0, 800),
-          originalJson: jsonString.substring(0, 400),
-          cleanedJson: cleanedJsonString.substring(0, 400),
+          jsonString: jsonString.substring(0, 400),
           jsonExtractionMethod: 'simple-trim'
         })
       };
