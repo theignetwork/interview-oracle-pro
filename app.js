@@ -328,6 +328,9 @@ class InterviewOraclePro {
       container.appendChild(categoryDiv);
       this.displayCategoryQuestions(category.key, questions);
     });
+
+    // Update Select All button text after questions are displayed
+    this.updateSelectAllButtonText();
   }
 
   displayCategoryQuestions(category, questions) {
@@ -389,17 +392,35 @@ class InterviewOraclePro {
     }
 
     this.updateSelectedQuestionsPreview();
+    this.updateSelectAllButtonText();
     console.log('Selected questions:', Array.from(this.selectedQuestions));
+  }
+
+  updateSelectAllButtonText() {
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+    const selectAllBtn = document.getElementById('selectAllQuestions');
+
+    if (selectAllBtn && checkboxes.length > 0) {
+      selectAllBtn.textContent = allSelected ? 'Deselect All' : 'Select All';
+    }
   }
 
   selectAllQuestions() {
     const checkboxes = document.querySelectorAll('.question-checkbox');
     const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+    const selectAllBtn = document.getElementById('selectAllQuestions');
 
     checkboxes.forEach(checkbox => {
       checkbox.checked = !allSelected;
-      checkbox.dispatchEvent(new Event('change'));
+      // Fire the change event with bubbles: true to trigger selection logic
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
     });
+
+    // Update button text to reflect new state
+    if (selectAllBtn) {
+      selectAllBtn.textContent = allSelected ? 'Select All' : 'Deselect All';
+    }
   }
 
   selectCategoryQuestions(category) {
@@ -408,7 +429,8 @@ class InterviewOraclePro {
 
     checkboxes.forEach(checkbox => {
       checkbox.checked = !allSelected;
-      checkbox.dispatchEvent(new Event('change'));
+      // Fire the change event with bubbles: true to trigger selection logic
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }
 
