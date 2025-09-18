@@ -859,13 +859,18 @@ h6, .h6 {
   margin-bottom: 1rem;
 }
 
+.framework-section {
+  margin-bottom: 1.5rem;
+}
+
 .framework-label {
   color: #2EB1BC;
   font-weight: 700;
   font-size: 1.05rem;
-  display: inline-block;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  display: block;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(46, 177, 188, 0.3);
 }
 
 .key-points-list {

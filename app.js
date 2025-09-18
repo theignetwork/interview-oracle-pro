@@ -349,7 +349,7 @@ class InterviewOraclePro {
             data-index="${index}"
           >
           <div class="question-details">
-            <div class="question-number">Question ${index + 1}</div>
+            <div class="question-number">${index + 1}.</div>
             <div class="question-text">${this.sanitizeInput(question.text)}</div>
             <div class="question-meta">
               <span class="confidence-tag">${question.confidence}</span>
@@ -653,40 +653,40 @@ class InterviewOraclePro {
     // Define framework patterns and their formatting
     const frameworkPatterns = {
       'SOAR Method': [
-        { pattern: /\b(Situation:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Obstacles:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Actions:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Results:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Situation:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Obstacles:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Actions:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Results:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Company Research': [
-        { pattern: /\b(Research:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Alignment:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Examples:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Research:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Alignment:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Examples:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Self-Reflection': [
-        { pattern: /\b(Awareness:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Examples:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Improvement:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Awareness:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Examples:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Improvement:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Career Planning': [
-        { pattern: /\b(Skills:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Growth:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Alignment:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Skills:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Growth:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Alignment:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Market Research': [
-        { pattern: /\b(Research:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Value:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Flexibility:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Research:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Value:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Flexibility:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Technical Explanation': [
-        { pattern: /\b(Concept:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Method:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Application:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Concept:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Method:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Application:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ],
       'Structured Response': [
-        { pattern: /\b(Context:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Detail:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
-        { pattern: /\b(Impact:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+        { pattern: /\b(Context:)/gi, replacement: '<div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Detail:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' },
+        { pattern: /\b(Impact:)/gi, replacement: '</div><div class="framework-section"><span class="framework-label">$1</span>' }
       ]
     };
 
@@ -698,10 +698,24 @@ class InterviewOraclePro {
       patterns.forEach(({ pattern, replacement }) => {
         formattedContent = formattedContent.replace(pattern, replacement);
       });
+
+      // Close the last framework section
+      formattedContent += '</div>';
     }
 
-    // Add line breaks after sentences for better readability
-    formattedContent = formattedContent.replace(/\. /g, '.<br><br>');
+    // Clean up redundant phrases that AI might generate
+    formattedContent = formattedContent
+      .replace(/The Situation was that/gi, '')
+      .replace(/The Situation:/gi, '')
+      .replace(/The Obstacles were/gi, '')
+      .replace(/The Obstacles:/gi, '')
+      .replace(/My Actions included/gi, '')
+      .replace(/The Actions were/gi, '')
+      .replace(/My Actions:/gi, '')
+      .replace(/The Results were/gi, '')
+      .replace(/The Results:/gi, '')
+      .replace(/^\s*,/gm, '') // Remove leading commas
+      .replace(/\s+/g, ' '); // Normalize whitespace
 
     return formattedContent;
   }
@@ -744,12 +758,13 @@ class InterviewOraclePro {
   }
 
   stripHtmlFormatting(htmlContent) {
-    // Remove HTML tags and convert back to plain text
+    // Remove HTML tags and convert back to plain text with proper formatting
     return htmlContent
+      .replace(/<div class="framework-section"><span class="framework-label">(.*?)<\/span>/gi, '\n\n**$1**\n')
+      .replace(/<\/div>/gi, '')
       .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<span class="framework-label">\*\*(.*?)\*\*<\/span>/gi, '$1')
+      .replace(/<span class="framework-label">(.*?)<\/span>/gi, '**$1**')
       .replace(/<[^>]*>/g, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\n\n+/g, '\n\n')
       .trim();
   }
