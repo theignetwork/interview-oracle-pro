@@ -96,6 +96,14 @@ class InterviewOraclePro {
         this.selectCategoryQuestions(e.target.dataset.category);
       }
     });
+
+    // Copy answer functionality
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.copy-answer-btn')) {
+        const answerIndex = e.target.closest('.copy-answer-btn').dataset.answerIndex;
+        this.copyAnswerToClipboard(answerIndex);
+      }
+    });
   }
 
   setupCharacterCounter() {
@@ -185,7 +193,7 @@ class InterviewOraclePro {
 
     const formData = this.getQuestionFormData();
 
-    this.showLoading(true, 'Analyzing job description and generating personalized questions...');
+    this.showLoading(true, 'questions');
 
     try {
       console.log('Generating questions with data:', formData);
@@ -459,7 +467,7 @@ class InterviewOraclePro {
 
     const formData = this.getQuestionFormData();
 
-    this.showLoading(true, 'Generating tailored answers...');
+    this.showLoading(true, 'answers');
 
     try {
       console.log('Generating answers for questions:', selectedQuestions);
@@ -521,7 +529,13 @@ class InterviewOraclePro {
       const methodologyBadge = this.createMethodologyBadge(answer.methodology, answer.type);
 
       answerSection.innerHTML = `
-        <div class="answer-question">${this.sanitizeInput(answer.question)}</div>
+        <div class="answer-header">
+          <div class="answer-question">${this.sanitizeInput(answer.question)}</div>
+          <button class="copy-answer-btn" data-answer-index="${index}" title="Copy answer to clipboard">
+            <span class="copy-icon">📋</span>
+            <span class="copy-text">Copy</span>
+          </button>
+        </div>
         ${methodologyBadge}
         <div class="answer-tabs">
           <button class="answer-tab active" data-answer-index="${index}" data-answer-type="full">
@@ -624,12 +638,172 @@ class InterviewOraclePro {
     const duration = type === 'full' ? '(2-3 minutes)' : '(60-90 seconds)';
     const label = type === 'full' ? 'Full Answer' : 'Concise Answer';
 
+    // Apply framework formatting based on methodology
+    const formattedContent = this.applyFrameworkFormatting(cleanContent, methodology);
+
     return `
       <div class="answer-framework">
         <div class="answer-title">${label} ${duration}</div>
-        <div class="answer-content-text">${cleanContent}</div>
+        <div class="answer-content-text">${formattedContent}</div>
       </div>
     `;
+  }
+
+  applyFrameworkFormatting(content, methodology) {
+    // Define framework patterns and their formatting
+    const frameworkPatterns = {
+      'SOAR Method': [
+        { pattern: /\b(Situation:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Obstacles:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Actions:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Results:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Company Research': [
+        { pattern: /\b(Research:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Alignment:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Examples:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Self-Reflection': [
+        { pattern: /\b(Awareness:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Examples:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Improvement:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Career Planning': [
+        { pattern: /\b(Skills:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Growth:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Alignment:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Market Research': [
+        { pattern: /\b(Research:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Value:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Flexibility:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Technical Explanation': [
+        { pattern: /\b(Concept:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Method:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Application:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ],
+      'Structured Response': [
+        { pattern: /\b(Context:)/gi, replacement: '<span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Detail:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' },
+        { pattern: /\b(Impact:)/gi, replacement: '<br><span class="framework-label">**$1**</span><br>' }
+      ]
+    };
+
+    let formattedContent = content;
+
+    // Apply patterns for the specific methodology
+    const patterns = frameworkPatterns[methodology];
+    if (patterns) {
+      patterns.forEach(({ pattern, replacement }) => {
+        formattedContent = formattedContent.replace(pattern, replacement);
+      });
+    }
+
+    // Add line breaks after sentences for better readability
+    formattedContent = formattedContent.replace(/\. /g, '.<br><br>');
+
+    return formattedContent;
+  }
+
+  // ===== COPY FUNCTIONALITY =====
+
+  async copyAnswerToClipboard(answerIndex) {
+    const answer = this.currentAnswers[answerIndex];
+    if (!answer) return;
+
+    // Get the currently active answer type
+    const activeTab = document.querySelector(`.answer-tab[data-answer-index="${answerIndex}"].active`);
+    const answerType = activeTab ? activeTab.dataset.answerType : 'full';
+
+    // Get the content based on the active tab
+    let content;
+    switch (answerType) {
+      case 'keyPoints':
+        const points = Array.isArray(answer.keyPoints) ? answer.keyPoints : [answer.keyPoints];
+        content = `Key Talking Points:\n${points.map((point, i) => `${i + 1}. ${point}`).join('\n')}`;
+        break;
+      case 'concise':
+        content = answer.concise;
+        break;
+      default:
+        content = answer.full;
+    }
+
+    // Create the final text with question context
+    const textToCopy = `QUESTION: ${answer.question}\n\nANSWER:\n${this.stripHtmlFormatting(content)}`;
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      this.showCopySuccess(answerIndex);
+    } catch (error) {
+      console.error('Copy failed:', error);
+      // Fallback for older browsers
+      this.fallbackCopyToClipboard(textToCopy, answerIndex);
+    }
+  }
+
+  stripHtmlFormatting(htmlContent) {
+    // Remove HTML tags and convert back to plain text
+    return htmlContent
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<span class="framework-label">\*\*(.*?)\*\*<\/span>/gi, '$1')
+      .replace(/<[^>]*>/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\n\n+/g, '\n\n')
+      .trim();
+  }
+
+  fallbackCopyToClipboard(text, answerIndex) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      this.showCopySuccess(answerIndex);
+    } catch (error) {
+      console.error('Fallback copy failed:', error);
+      this.showCopyError(answerIndex);
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  }
+
+  showCopySuccess(answerIndex) {
+    const copyBtn = document.querySelector(`.copy-answer-btn[data-answer-index="${answerIndex}"]`);
+    if (!copyBtn) return;
+
+    const originalHTML = copyBtn.innerHTML;
+    copyBtn.innerHTML = `
+      <span class="copy-icon">✅</span>
+      <span class="copy-text">Copied!</span>
+    `;
+    copyBtn.classList.add('copy-success');
+
+    setTimeout(() => {
+      copyBtn.innerHTML = originalHTML;
+      copyBtn.classList.remove('copy-success');
+    }, 2000);
+  }
+
+  showCopyError(answerIndex) {
+    const copyBtn = document.querySelector(`.copy-answer-btn[data-answer-index="${answerIndex}"]`);
+    if (!copyBtn) return;
+
+    const originalHTML = copyBtn.innerHTML;
+    copyBtn.innerHTML = `
+      <span class="copy-icon">❌</span>
+      <span class="copy-text">Failed</span>
+    `;
+    copyBtn.classList.add('copy-error');
+
+    setTimeout(() => {
+      copyBtn.innerHTML = originalHTML;
+      copyBtn.classList.remove('copy-error');
+    }, 2000);
   }
 
   // ===== SESSION MANAGEMENT =====
@@ -966,7 +1140,7 @@ class InterviewOraclePro {
     }, 3000);
   }
 
-  showLoading(state, message = 'Processing...') {
+  showLoading(state, messageType = 'processing') {
     const loadingElement = document.getElementById('globalLoading');
     const loadingText = document.getElementById('loadingText');
 
@@ -974,12 +1148,76 @@ class InterviewOraclePro {
       if (state) {
         loadingElement.classList.remove('hidden');
         if (loadingText) {
-          loadingText.textContent = message;
+          this.startRotatingMessages(messageType);
         }
       } else {
         loadingElement.classList.add('hidden');
+        this.stopRotatingMessages();
       }
     }
+  }
+
+  startRotatingMessages(messageType) {
+    const loadingText = document.getElementById('loadingText');
+    if (!loadingText) return;
+
+    const messages = this.getRotatingMessages(messageType);
+    let currentIndex = 0;
+
+    // Set initial message
+    loadingText.textContent = messages[0];
+
+    // Clear any existing interval
+    if (this.rotatingInterval) {
+      clearInterval(this.rotatingInterval);
+    }
+
+    // Start rotating messages every 3.5 seconds
+    this.rotatingInterval = setInterval(() => {
+      loadingText.style.opacity = '0.5';
+
+      setTimeout(() => {
+        currentIndex = (currentIndex + 1) % messages.length;
+        loadingText.textContent = messages[currentIndex];
+        loadingText.style.opacity = '1';
+      }, 150);
+    }, 3500);
+  }
+
+  stopRotatingMessages() {
+    if (this.rotatingInterval) {
+      clearInterval(this.rotatingInterval);
+      this.rotatingInterval = null;
+    }
+  }
+
+  getRotatingMessages(messageType) {
+    const messageMap = {
+      questions: [
+        "Analyzing job requirements and company culture...",
+        "Jeff & Mike's Tip: Great questions reveal what matters most to the role",
+        "Generating personalized questions based on your experience level...",
+        "Jeff & Mike's Tip: Behavioral questions are 60% of most interviews",
+        "Matching questions to industry best practices...",
+        "Jeff & Mike's Tip: Technical questions test both knowledge and problem-solving"
+      ],
+      answers: [
+        "Generating tailored answers using proven methodologies...",
+        "Jeff & Mike's Tip: SOAR method works best for behavioral questions",
+        "Applying intelligent frameworks to each question type...",
+        "Jeff & Mike's Tip: Research the company before answering 'Why us?' questions",
+        "Crafting professional responses with key talking points...",
+        "Jeff & Mike's Tip: Practice your answers out loud for better delivery"
+      ],
+      processing: [
+        "Processing your request...",
+        "Jeff & Mike's Tip: Preparation is the key to interview confidence",
+        "Working on your interview materials...",
+        "Jeff & Mike's Tip: Quality answers beat quantity every time"
+      ]
+    };
+
+    return messageMap[messageType] || messageMap.processing;
   }
 
   formatDate(dateString) {
