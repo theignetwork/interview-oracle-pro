@@ -3,6 +3,11 @@ exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ error: 'Method Not Allowed' })
     };
   }
@@ -22,7 +27,7 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Questions array is required' })
+        body: JSON.stringify({ error: 'Questions array is required and must not be empty' })
       };
     }
 
@@ -34,63 +39,80 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Define answer styles
+    // Define answer styles with specific guidance
     const stylePrompts = {
-      confident: "Write with confidence and authority, showcasing achievements and capabilities. Use strong action verbs and quantifiable results.",
-      humble: "Write with humility while still highlighting accomplishments. Acknowledge team contributions and show continuous learning mindset.",
-      technical: "Focus on technical details, methodologies, and specific technologies used. Include technical challenges and solutions.",
-      leadership: "Emphasize leadership qualities, team management, decision-making, and strategic thinking. Show how you inspire and guide others."
+      confident: "Write with confidence and authority. Use strong action verbs, showcase achievements prominently, and demonstrate leadership. Quantify results with specific numbers and percentages.",
+      humble: "Write with humility while highlighting accomplishments. Acknowledge team contributions, show continuous learning mindset, and emphasize collaboration and growth.",
+      technical: "Focus on technical details, methodologies, and specific technologies. Include technical challenges, problem-solving approaches, and implementation details relevant to the role.",
+      leadership: "Emphasize leadership qualities, team management, and strategic thinking. Show how you inspire others, make decisions, handle conflict, and drive organizational success."
     };
 
     const selectedStyle = answerStyle || 'confident';
     const styleGuidance = stylePrompts[selectedStyle];
+    const expLevel = experienceLevel || 'experienced professional';
+    const companyText = companyName ? ` at ${companyName}` : '';
 
-    // Build the comprehensive prompt for SOAR answers
-    const prompt = `You are an expert career coach specializing in the SOAR method (Situation, Obstacles, Actions, Results). Generate comprehensive interview answers for a ${experienceLevel || 'professional'} applying for a ${role} position${companyName ? ` at ${companyName}` : ''}.
+    // Build comprehensive prompt for SOAR answers
+    const prompt = `You are an expert career coach specializing in the SOAR interview method. Generate comprehensive, professional interview answers for a ${expLevel} applying for a ${role} position${companyText}.
 
 Job Context:
 ${jobDescription}
 
 Answer Style: ${styleGuidance}
 
-For each question provided, create a detailed SOAR answer with the following structure:
+INSTRUCTIONS:
+For each question provided, create a detailed answer using the SOAR framework:
+- **Situation**: Set the context (20-30 words)
+- **Obstacles**: Identify challenges faced (20-30 words)
+- **Actions**: Detail specific actions taken (100-150 words)
+- **Results**: Quantify outcomes and impact (50-80 words)
 
-**SOAR Framework:**
-- **Situation**: Set the context (1-2 sentences)
-- **Obstacles**: Identify challenges faced (1-2 sentences)
-- **Actions**: Detail specific actions taken (3-4 sentences)
-- **Results**: Quantify outcomes and impact (2-3 sentences)
+For each question, provide THREE versions:
 
-**Answer Variations:**
-Create 3 versions for each question:
-1. **Full Answer (2-3 minutes)**: 250-300 words, comprehensive SOAR structure
-2. **Concise Answer (30-60 seconds)**: 80-120 words, abbreviated SOAR
-3. **Key Points**: 3-5 bullet points highlighting the most important elements
+1. **FULL SOAR ANSWER** (200-300 words):
+   - Complete professional response following SOAR structure
+   - Include specific examples and quantified results
+   - Demonstrate skills relevant to the ${role} role
+   - Use ${selectedStyle} tone throughout
 
-**Requirements:**
-- Make answers specific to the ${role} role and job requirements
-- Include relevant industry terminology and concepts
-- Use quantifiable metrics where appropriate (percentages, numbers, timeframes)
-- Ensure answers demonstrate skills mentioned in the job description
-- Maintain the ${selectedStyle} tone throughout
-- Make each answer unique and authentic-sounding
+2. **CONCISE VERSION** (60-80 words):
+   - Condensed elevator pitch style
+   - Hit all SOAR elements briefly
+   - Perfect for quick responses or follow-ups
+
+3. **KEY TALKING POINTS** (5 bullet points):
+   - Essential points to remember and emphasize
+   - Action-oriented statements with impact
+   - Include specific metrics when possible
+
+REQUIREMENTS:
+- Make answers specific to ${role} and relevant job requirements
+- Include industry terminology and technical concepts
+- Use quantifiable metrics (percentages, dollar amounts, timeframes)
+- Ensure each answer showcases different competencies
+- Maintain consistency with ${selectedStyle} approach
+- Make examples realistic and achievable
 
 Questions to answer:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
-Format your response as a JSON object with this exact structure:
+Return ONLY valid JSON in this exact format:
 {
   "answers": [
     {
       "question": "original question text",
-      "full": "250-300 word comprehensive SOAR answer",
-      "concise": "80-120 word abbreviated answer",
-      "keyPoints": ["bullet point 1", "bullet point 2", "bullet point 3", "bullet point 4", "bullet point 5"]
+      "full": "Complete 200-300 word SOAR answer",
+      "concise": "60-80 word condensed answer",
+      "keyPoints": [
+        "Key talking point 1",
+        "Key talking point 2",
+        "Key talking point 3",
+        "Key talking point 4",
+        "Key talking point 5"
+      ]
     }
   ]
-}
-
-Generate professional, specific answers that would impress hiring managers for this ${role} position. Focus on demonstrating value, problem-solving abilities, and results achievement.`;
+}`;
 
     // Send request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -101,7 +123,7 @@ Generate professional, specific answers that would impress hiring managers for t
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229', // Using Sonnet for better quality answers
+        model: 'claude-3-sonnet-20240229', // Using Sonnet for better quality
         max_tokens: 4000,
         temperature: 0.7,
         messages: [{
@@ -114,11 +136,15 @@ Generate professional, specific answers that would impress hiring managers for t
     // Check response status
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', errorText);
+      console.error('Claude API error:', response.status, errorText);
       return {
         statusCode: response.status,
         headers,
-        body: JSON.stringify({ error: 'Claude API error', details: errorText })
+        body: JSON.stringify({
+          error: 'Claude API error',
+          details: errorText,
+          status: response.status
+        })
       };
     }
 
@@ -127,66 +153,58 @@ Generate professional, specific answers that would impress hiring managers for t
     // Parse Claude's response
     let parsedContent;
     try {
-      parsedContent = JSON.parse(apiResponse.content[0].text);
+      const responseText = apiResponse.content[0].text;
+
+      // Try to extract JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedContent = JSON.parse(jsonMatch[0]);
+      } else {
+        parsedContent = JSON.parse(responseText);
+      }
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
-      console.error('Raw response:', apiResponse.content[0].text);
+      console.error('Raw Claude response:', apiResponse.content[0].text);
 
-      // Attempt to extract JSON from response if it's wrapped in other text
-      const jsonMatch = apiResponse.content[0].text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsedContent = JSON.parse(jsonMatch[0]);
-        } catch (secondParseError) {
-          return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({
-              error: 'Failed to parse Claude response',
-              details: 'Response was not valid JSON',
-              rawResponse: apiResponse.content[0].text
-            })
-          };
-        }
-      } else {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: 'No JSON found in Claude response',
-            rawResponse: apiResponse.content[0].text
-          })
-        };
-      }
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Failed to parse Claude response',
+          details: 'Response was not valid JSON',
+          rawResponse: apiResponse.content[0].text.substring(0, 500) + '...'
+        })
+      };
     }
 
-    // Validate the parsed response structure
+    // Validate response structure
     if (!parsedContent.answers || !Array.isArray(parsedContent.answers)) {
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
-          error: 'Invalid response structure',
-          details: 'Missing answers array'
+          error: 'Invalid response structure from Claude',
+          details: 'Missing answers array',
+          received: Object.keys(parsedContent)
         })
       };
     }
 
-    // Ensure all answers have required fields
+    // Ensure all answers have required fields and match frontend format
     const validatedAnswers = parsedContent.answers.map((answer, index) => {
-      if (!answer.question || !answer.full || !answer.concise || !answer.keyPoints) {
-        console.error(`Answer ${index} missing required fields:`, answer);
-        return {
-          question: questions[index] || `Question ${index + 1}`,
-          full: answer.full || 'Answer generation failed for this question.',
-          concise: answer.concise || 'Answer generation failed.',
-          keyPoints: answer.keyPoints || ['Answer generation failed']
-        };
-      }
-      return answer;
+      const questionText = questions[index] || `Question ${index + 1}`;
+
+      return {
+        question: answer.question || questionText,
+        full: answer.full || answer.fullAnswer || 'Answer generation failed for this question.',
+        concise: answer.concise || answer.quickVersion || answer.short || 'Answer generation failed.',
+        keyPoints: Array.isArray(answer.keyPoints) ? answer.keyPoints :
+                  Array.isArray(answer.key_points) ? answer.key_points :
+                  ['Unable to generate key points']
+      };
     });
 
-    // Return the validated answers
+    // Return successful response
     return {
       statusCode: 200,
       headers,
@@ -197,7 +215,9 @@ Generate professional, specific answers that would impress hiring managers for t
           questionCount: questions.length,
           role: role,
           experienceLevel: experienceLevel,
-          generatedAt: new Date().toISOString()
+          companyName: companyName,
+          generatedAt: new Date().toISOString(),
+          model: 'claude-3-sonnet'
         }
       })
     };
