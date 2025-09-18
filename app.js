@@ -81,12 +81,6 @@ class InterviewOraclePro {
       });
     }
 
-    // Answer style selection
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('style-button')) {
-        this.selectAnswerStyle(e.target.dataset.style);
-      }
-    });
 
     // Answer tab switching
     document.addEventListener('click', (e) => {
@@ -430,7 +424,6 @@ class InterviewOraclePro {
 
   updateSelectedQuestionsPreview() {
     const container = document.getElementById('selectedQuestionsPreview');
-    const styleSelector = document.getElementById('answerStyleSelector');
 
     if (!container) return;
 
@@ -438,7 +431,6 @@ class InterviewOraclePro {
 
     if (selectedQuestions.length === 0) {
       container.innerHTML = '<p class="no-selection">Select questions from the Generate tab to create SOAR answers.</p>';
-      styleSelector?.classList.add('hidden');
       return;
     }
 
@@ -453,8 +445,6 @@ class InterviewOraclePro {
         `).join('')}
       </ul>
     `;
-
-    styleSelector?.classList.remove('hidden');
   }
 
   // ===== ANSWER GENERATION =====
@@ -468,7 +458,6 @@ class InterviewOraclePro {
     }
 
     const formData = this.getQuestionFormData();
-    const answerStyle = this.getSelectedAnswerStyle();
 
     this.showLoading(true, 'Generating SOAR framework answers...');
 
@@ -484,7 +473,7 @@ class InterviewOraclePro {
           role: formData.role,
           experienceLevel: formData.experienceLevel,
           companyName: formData.companyName,
-          answerStyle: answerStyle
+          answerStyle: 'confident'
         })
       });
 
@@ -507,8 +496,7 @@ class InterviewOraclePro {
       this.addActivity('answers_generated', `Created SOAR answers for ${result.answers.length} questions`);
 
       this.trackEvent('answers_generated', {
-        answer_count: result.answers.length,
-        answer_style: answerStyle
+        answer_count: result.answers.length
       });
 
     } catch (error) {
@@ -519,17 +507,6 @@ class InterviewOraclePro {
     }
   }
 
-  getSelectedAnswerStyle() {
-    const activeStyleButton = document.querySelector('.style-button.active');
-    return activeStyleButton?.dataset.style || 'confident';
-  }
-
-  selectAnswerStyle(style) {
-    document.querySelectorAll('.style-button').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    document.querySelector(`[data-style="${style}"]`)?.classList.add('active');
-  }
 
   displayAnswers() {
     const container = document.getElementById('answersContainer');
@@ -540,8 +517,12 @@ class InterviewOraclePro {
     this.currentAnswers.forEach((answer, index) => {
       const answerSection = document.createElement('div');
       answerSection.className = 'answer-section';
+
+      const methodologyBadge = this.createMethodologyBadge(answer.methodology, answer.type);
+
       answerSection.innerHTML = `
         <div class="answer-question">${this.sanitizeInput(answer.question)}</div>
+        ${methodologyBadge}
         <div class="answer-tabs">
           <button class="answer-tab active" data-answer-index="${index}" data-answer-type="full">
             Full Answer
@@ -554,12 +535,58 @@ class InterviewOraclePro {
           </button>
         </div>
         <div class="answer-content" id="answer-content-${index}">
-          ${this.formatSOARAnswer(answer.full, 'full')}
+          ${this.formatAnswer(answer.full, 'full', answer.methodology)}
         </div>
       `;
 
       container.appendChild(answerSection);
     });
+  }
+
+  createMethodologyBadge(methodology, type) {
+    const methodologyConfig = this.getMethodologyConfig(methodology, type);
+
+    return `
+      <div class="answer-methodology">
+        <span class="methodology-badge ${methodologyConfig.cssClass}">${methodology}</span>
+        <span class="methodology-tooltip" data-tooltip="${methodologyConfig.tooltip}">?</span>
+      </div>
+    `;
+  }
+
+  getMethodologyConfig(methodology, type) {
+    const configs = {
+      'SOAR Method': {
+        cssClass: 'soar-method',
+        tooltip: 'Situation, Obstacles, Actions, Results - proven framework for behavioral questions'
+      },
+      'Company Research': {
+        cssClass: 'company-research',
+        tooltip: 'Research-based answers showing knowledge of company values and culture'
+      },
+      'Self-Reflection': {
+        cssClass: 'self-reflection',
+        tooltip: 'Honest self-assessment with improvement strategies'
+      },
+      'Technical Explanation': {
+        cssClass: 'technical-explanation',
+        tooltip: 'Step-by-step breakdown with practical application'
+      },
+      'Career Planning': {
+        cssClass: 'career-planning',
+        tooltip: 'Realistic career progression with skill development focus'
+      },
+      'Market Research': {
+        cssClass: 'market-research',
+        tooltip: 'Market-informed salary discussion with value demonstration'
+      },
+      'Structured Response': {
+        cssClass: 'structured-response',
+        tooltip: 'Professional structured response with clear context and impact'
+      }
+    };
+
+    return configs[methodology] || configs['Structured Response'];
   }
 
   showAnswerVariation(answerIndex, answerType) {
@@ -577,15 +604,15 @@ class InterviewOraclePro {
 
     // Update content
     const contentContainer = document.getElementById(`answer-content-${index}`);
-    contentContainer.innerHTML = this.formatSOARAnswer(answer[answerType], answerType);
+    contentContainer.innerHTML = this.formatAnswer(answer[answerType], answerType, answer.methodology);
   }
 
-  formatSOARAnswer(content, type) {
+  formatAnswer(content, type, methodology) {
     if (type === 'keyPoints') {
       const points = Array.isArray(content) ? content : [content];
       return `
         <div class="key-points-section">
-          <div class="soar-title">Key Talking Points</div>
+          <div class="answer-title">Key Talking Points</div>
           <ul class="key-points-list">
             ${points.map(point => `<li>${this.sanitizeInput(point)}</li>`).join('')}
           </ul>
@@ -593,22 +620,14 @@ class InterviewOraclePro {
       `;
     }
 
-    // For full and concise answers, try to structure as SOAR if possible
     const cleanContent = this.sanitizeInput(content);
-
-    if (type === 'full') {
-      return `
-        <div class="soar-framework">
-          <div class="soar-title">Full SOAR Answer (2-3 minutes)</div>
-          <div class="soar-content">${cleanContent}</div>
-        </div>
-      `;
-    }
+    const duration = type === 'full' ? '(2-3 minutes)' : '(60-90 seconds)';
+    const label = type === 'full' ? 'Full Answer' : 'Concise Answer';
 
     return `
-      <div class="soar-framework">
-        <div class="soar-title">Concise Answer (60-90 seconds)</div>
-        <div class="soar-content">${cleanContent}</div>
+      <div class="answer-framework">
+        <div class="answer-title">${label} ${duration}</div>
+        <div class="answer-content-text">${cleanContent}</div>
       </div>
     `;
   }

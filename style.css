@@ -486,42 +486,6 @@ body {
   font-style: italic;
 }
 
-.answer-style-selector {
-  background: #192734;
-  border-radius: 16px;
-  padding: 1.5rem;
-}
-
-.answer-style-selector.hidden {
-  display: none;
-}
-
-.style-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.style-button {
-  padding: 0.75rem 1.5rem;
-  background: #253341;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  color: #E1E8ED;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.style-button:hover {
-  border-color: rgba(46, 177, 188, 0.5);
-}
-
-.style-button.active {
-  background: #2EB1BC;
-  color: #0F1419;
-  border-color: #2EB1BC;
-}
 
 .answers-container {
   display: grid;
@@ -571,7 +535,7 @@ body {
   color: #0F1419;
 }
 
-.soar-framework {
+.answer-framework {
   margin-bottom: 1.5rem;
 }
 
@@ -583,7 +547,7 @@ body {
   border-radius: 0 8px 8px 0;
 }
 
-.soar-title {
+.answer-title {
   font-weight: 700;
   color: #2EB1BC;
   margin-bottom: 0.5rem;
@@ -592,7 +556,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.soar-content {
+.answer-content-text {
   color: #E1E8ED;
   line-height: 1.6;
 }
@@ -841,6 +805,111 @@ body {
   display: none !important;
 }
 
+/* ===== METHODOLOGY BADGES ===== */
+.answer-methodology {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.methodology-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.methodology-badge.soar-method {
+  background: rgba(46, 177, 188, 0.1);
+  color: #2EB1BC;
+  border: 1px solid rgba(46, 177, 188, 0.2);
+}
+
+.methodology-badge.company-research {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.methodology-badge.self-reflection {
+  background: rgba(255, 193, 7, 0.1);
+  color: #FFC107;
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.methodology-badge.technical-explanation {
+  background: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
+  border: 1px solid rgba(156, 39, 176, 0.2);
+}
+
+.methodology-badge.career-planning {
+  background: rgba(63, 81, 181, 0.1);
+  color: #3F51B5;
+  border: 1px solid rgba(63, 81, 181, 0.2);
+}
+
+.methodology-badge.market-research {
+  background: rgba(255, 87, 34, 0.1);
+  color: #FF5722;
+  border: 1px solid rgba(255, 87, 34, 0.2);
+}
+
+.methodology-badge.structured-response {
+  background: rgba(158, 158, 158, 0.1);
+  color: #9E9E9E;
+  border: 1px solid rgba(158, 158, 158, 0.2);
+}
+
+.methodology-tooltip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #94A3B8;
+  cursor: help;
+  position: relative;
+}
+
+.methodology-tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1E293B;
+  color: #F8FAFC;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 1000;
+  border: 1px solid #334155;
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.methodology-tooltip:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1E293B;
+  z-index: 1001;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .app-container {
@@ -874,9 +943,6 @@ body {
     justify-content: center;
   }
 
-  .style-buttons {
-    justify-content: center;
-  }
 
   .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

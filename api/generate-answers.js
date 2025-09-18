@@ -1,7 +1,129 @@
 /**
- * Generate SOAR Framework Answers API
- * Professional implementation with proper text handling
+ * Generate Professional Interview Answers API
+ * Intelligent methodology selection based on question type
  */
+
+/**
+ * Classify question type to determine appropriate answer methodology
+ * @param {string} question - The interview question to classify
+ * @returns {string} - Question type classification
+ */
+function classifyQuestion(question) {
+  const questionLower = question.toLowerCase();
+
+  // Behavioral indicators - use SOAR method
+  const behavioralKeywords = [
+    'tell me about a time', 'describe a situation', 'give me an example',
+    'walk me through', 'when you had to', 'a time when', 'an example of when',
+    'describe when you', 'tell me about when', 'give an example of'
+  ];
+  if (behavioralKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'behavioral';
+  }
+
+  // Motivation/Values indicators - use company research + personal alignment
+  const motivationKeywords = [
+    'why do you want', 'why are you interested', 'what attracts you',
+    'why this company', 'why our company', 'why us', 'what interests you about'
+  ];
+  if (motivationKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'motivation';
+  }
+
+  // Self-assessment indicators - use honest reflection + improvement plan
+  const selfAssessmentKeywords = [
+    'biggest weakness', 'greatest weakness', 'your weakness', 'your strengths',
+    'greatest strength', 'how do you handle stress', 'how do you deal with',
+    'what are you bad at', 'what do you struggle with', 'areas for improvement'
+  ];
+  if (selfAssessmentKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'self_assessment';
+  }
+
+  // Career vision indicators - use thoughtful progression
+  const careerVisionKeywords = [
+    'where do you see yourself', 'career goals', 'future plans',
+    'in 5 years', 'long term goals', 'career aspirations', 'professional goals'
+  ];
+  if (careerVisionKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'career_vision';
+  }
+
+  // Compensation indicators - use market research approach
+  const compensationKeywords = [
+    'salary expectations', 'current salary', 'compensation', 'what do you expect to earn',
+    'salary requirements', 'pay expectations', 'salary range'
+  ];
+  if (compensationKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'compensation';
+  }
+
+  // Technical indicators - use step-by-step explanation
+  const technicalKeywords = [
+    'explain how', 'what is', 'how does', 'define', 'technical approach',
+    'your experience with', 'how would you implement', 'design a system'
+  ];
+  if (technicalKeywords.some(keyword => questionLower.includes(keyword))) {
+    return 'technical';
+  }
+
+  // Default to general
+  return 'general';
+}
+
+/**
+ * Get methodology framework for question type
+ * @param {string} questionType - The classified question type
+ * @returns {object} - Framework configuration
+ */
+function getMethodologyFramework(questionType) {
+  const frameworks = {
+    behavioral: {
+      name: 'SOAR Method',
+      structure: 'Situation, Obstacles, Actions, Results',
+      guidance: 'Use the SOAR framework: Situation (context), Obstacles (challenges), Actions (specific steps), Results (quantified outcomes). Provide concrete examples with measurable impact.',
+      tooltip: 'Situation, Obstacles, Actions, Results - proven framework for behavioral questions'
+    },
+    motivation: {
+      name: 'Company Research',
+      structure: 'Research, Alignment, Examples',
+      guidance: 'Structure: Research about the company/role + alignment with personal values + specific examples of interest. Show genuine knowledge and enthusiasm.',
+      tooltip: 'Research-based answers showing knowledge of company values and culture'
+    },
+    self_assessment: {
+      name: 'Self-Reflection',
+      structure: 'Awareness, Examples, Improvement',
+      guidance: 'Structure: Honest self-reflection + concrete examples + improvement strategies or management techniques. Balance honesty with professionalism.',
+      tooltip: 'Honest self-assessment with improvement strategies'
+    },
+    career_vision: {
+      name: 'Career Planning',
+      structure: 'Skills, Growth, Alignment',
+      guidance: 'Structure: Realistic skill development goals + logical career progression + alignment with company opportunities. Show thoughtful planning.',
+      tooltip: 'Realistic career progression with skill development focus'
+    },
+    compensation: {
+      name: 'Market Research',
+      structure: 'Research, Value, Flexibility',
+      guidance: 'Structure: Market research for the role/location + value proposition highlighting your worth + flexibility and openness to discussion.',
+      tooltip: 'Market-informed salary discussion with value demonstration'
+    },
+    technical: {
+      name: 'Technical Explanation',
+      structure: 'Concept, Method, Application',
+      guidance: 'Structure: Clear step-by-step explanation + methodology/best practices + practical application examples. Use specific technical details.',
+      tooltip: 'Step-by-step breakdown with practical application'
+    },
+    general: {
+      name: 'Structured Response',
+      structure: 'Context, Detail, Impact',
+      guidance: 'Structure: Brief context setting + detailed explanation with examples + impact or relevance to the role. Maintain professional focus.',
+      tooltip: 'Professional structured response with clear context and impact'
+    }
+  };
+
+  return frameworks[questionType] || frameworks.general;
+}
 
 exports.handler = async (event, context) => {
   // Handle CORS preflight
@@ -35,14 +157,20 @@ exports.handler = async (event, context) => {
   };
 
   try {
+    console.log('=== GENERATE ANSWERS API STARTED ===');
+    console.log('Event body:', event.body);
+    console.log('Event method:', event.httpMethod);
+
     // Parse and validate request
     const requestData = JSON.parse(event.body || '{}');
     const { questions, jobDescription, role, experienceLevel, companyName, answerStyle } = requestData;
 
-    console.log('Generate answers request:', {
+    console.log('Parsed request data:', {
       questionCount: questions?.length,
+      questions: questions,
       role,
       experienceLevel,
+      jobDescriptionLength: jobDescription?.length,
       answerStyle
     });
 
@@ -81,87 +209,68 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Define answer style configurations
-    const styleConfigurations = {
-      confident: {
-        tone: "confident and assertive",
-        guidance: "Use strong action verbs, showcase achievements prominently, and demonstrate leadership. Quantify results with specific numbers and percentages."
-      },
-      humble: {
-        tone: "humble yet accomplished",
-        guidance: "Acknowledge team contributions, show continuous learning mindset, and emphasize collaboration while highlighting personal growth."
-      },
-      technical: {
-        tone: "technical and detailed",
-        guidance: "Focus on technical methodologies, specific technologies, and implementation details. Include technical challenges and problem-solving approaches."
-      },
-      leadership: {
-        tone: "leadership-focused and strategic",
-        guidance: "Emphasize team management, decision-making, and strategic thinking. Show how you inspire others and drive organizational success."
-      }
-    };
+    console.log('Starting question classification...');
 
-    const selectedStyle = answerStyle || 'confident';
-    const styleConfig = styleConfigurations[selectedStyle] || styleConfigurations.confident;
+    // Classify questions and determine methodologies
+    const questionsWithMethodologies = questions.map((question, index) => {
+      console.log(`Classifying question ${index + 1}: "${question}"`);
+      const type = classifyQuestion(question);
+      const framework = getMethodologyFramework(type);
+      console.log(`Result: type=${type}, methodology=${framework.name}`);
+      return {
+        question,
+        type,
+        framework
+      };
+    });
 
-    // Build comprehensive prompt
-    const prompt = `You are an expert career coach specializing in the SOAR interview methodology. Generate professional interview answers for a ${experienceLevel || 'professional'} applying for a ${role} position${companyName ? ` at ${companyName}` : ''}.
+    console.log('All question classifications complete:', questionsWithMethodologies.map(q => ({
+      question: q.question.substring(0, 50) + '...',
+      type: q.type,
+      methodology: q.framework.name
+    })));
 
-Job Context:
-${jobDescription}
+    // Create simple, working prompt
+    const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
 
-Answer Style: ${styleConfig.tone}
-Style Guidance: ${styleConfig.guidance}
+    const prompt = `Generate professional interview answers for a ${role} position.
 
-SOAR Framework Guidelines:
-- Situation: Brief context setting (20-30 words)
-- Obstacles: Challenges or difficulties faced (20-30 words)
-- Actions: Specific steps taken to address the situation (80-120 words)
-- Results: Quantified outcomes and impact (40-60 words)
+Questions:
+${questionsText}
 
-For each question, provide THREE response formats:
-
-1. FULL SOAR ANSWER (200-280 words):
-   - Complete professional response following SOAR structure
-   - Include specific examples and quantified results
-   - Demonstrate skills relevant to ${role}
-   - Use ${styleConfig.tone} tone throughout
-
-2. CONCISE VERSION (60-80 words):
-   - Condensed elevator pitch style
-   - Hit all SOAR elements briefly
-   - Perfect for follow-up questions
-
-3. KEY TALKING POINTS (exactly 5 bullet points):
-   - Essential points to remember
-   - Action-oriented statements
-   - Include metrics when possible
-
-Requirements:
-- Make answers specific to ${role} requirements
-- Include industry terminology relevant to the field
-- Use quantifiable metrics (percentages, amounts, timeframes)
-- Ensure each answer showcases different competencies
-- Keep responses realistic and achievable
-
-Questions to answer:
-${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
-
-Return ONLY valid JSON in this exact format:
+Return only valid JSON in this format:
 {
   "answers": [
     {
-      "question": "original question text",
-      "full": "Complete SOAR answer text",
-      "concise": "Brief version text",
-      "keyPoints": ["point 1", "point 2", "point 3", "point 4", "point 5"]
+      "question": "exact question text",
+      "type": "general",
+      "methodology": "Professional Response",
+      "full": "Complete 200-word professional answer with specific examples and results",
+      "concise": "Brief 60-word version",
+      "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4", "key point 5"]
     }
   ]
 }`;
 
+    console.log('Prompt created, length:', prompt.length);
+    console.log('Prompt preview:', prompt.substring(0, 200));
+    console.log('API Key available:', !!process.env.CLAUDE_API_KEY);
+
     console.log('Sending request to Claude API...');
 
     // Call Claude API
+    const claudeRequest = {
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 3000,
+      temperature: 0.7,
+      messages: [{
+        role: 'user',
+        content: prompt
+      }]
+    };
+
+    console.log('Claude request body:', JSON.stringify(claudeRequest, null, 2));
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -169,56 +278,117 @@ Return ONLY valid JSON in this exact format:
         'x-api-key': process.env.CLAUDE_API_KEY,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 3000,
-        temperature: 0.7,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+      body: JSON.stringify(claudeRequest)
     });
+
+    console.log('Claude API response status:', response.status);
+    console.log('Claude API response headers:', Object.fromEntries(response.headers.entries()));
 
     // Check Claude API response
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
+      console.error('=== CLAUDE API ERROR ===');
+      console.error('Status:', response.status);
+      console.error('Status Text:', response.statusText);
+      console.error('Error Response:', errorText);
       return {
         statusCode: response.status,
         headers,
         body: JSON.stringify({
           error: 'Claude API error',
           status: response.status,
-          details: errorText.substring(0, 200)
+          statusText: response.statusText,
+          details: errorText.substring(0, 500)
         })
       };
     }
 
+    console.log('Claude API call successful, parsing response...');
     const claudeResponse = await response.json();
-    console.log('Claude API response received, length:', claudeResponse.content[0].text.length);
+    console.log('Claude response structure:', Object.keys(claudeResponse));
+    console.log('Content array length:', claudeResponse.content?.length);
+
+    if (claudeResponse.content && claudeResponse.content[0]) {
+      console.log('Response text length:', claudeResponse.content[0].text.length);
+      console.log('Response text preview:', claudeResponse.content[0].text.substring(0, 300));
+    } else {
+      console.error('Unexpected Claude response structure:', claudeResponse);
+    }
 
     // Extract and parse JSON response
     const responseText = claudeResponse.content[0].text.trim();
+    console.log('Raw Claude response:', responseText.substring(0, 200));
 
-    // Find JSON in response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    const jsonString = jsonMatch ? jsonMatch[0] : responseText;
+    // Try multiple JSON extraction methods
+    let jsonString = null;
+    let codeBlockMatch = null;
+    let jsonMatch = null;
+
+    console.log('Trying JSON extraction methods...');
+
+    // Method 1: Look for JSON between ```json and ```
+    codeBlockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      console.log('Found JSON in code block');
+      jsonString = codeBlockMatch[1].trim();
+    } else {
+      // Method 2: Look for complete JSON object
+      jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        console.log('Found JSON object with regex');
+        jsonString = jsonMatch[0];
+      } else {
+        // Method 3: Assume the entire response is JSON
+        console.log('Using entire response as JSON');
+        jsonString = responseText;
+      }
+    }
+
+    console.log('=== JSON PARSING ATTEMPT ===');
+    console.log('jsonString length:', jsonString?.length);
+    console.log('jsonString preview:', jsonString?.substring(0, 300));
+
+    // Clean the JSON string to fix control character issues
+    console.log('Cleaning JSON string...');
+    const cleanedJsonString = jsonString
+      .replace(/\n/g, '\\n')           // Escape newlines
+      .replace(/\r/g, '\\r')           // Escape carriage returns
+      .replace(/\t/g, '\\t')           // Escape tabs
+      .replace(/\f/g, '\\f')           // Escape form feeds
+      .replace(/\b/g, '\\b')           // Escape backspaces
+      .replace(/[\x00-\x1F\x7F]/g, '') // Remove other control characters
+      .replace(/\\+n/g, '\\n')         // Fix double-escaped newlines
+      .replace(/\\+r/g, '\\r')         // Fix double-escaped carriage returns
+      .replace(/\\+t/g, '\\t');        // Fix double-escaped tabs
+
+    console.log('Cleaned JSON preview:', cleanedJsonString.substring(0, 300));
 
     let parsedAnswers;
     try {
-      parsedAnswers = JSON.parse(jsonString);
+      console.log('Attempting JSON.parse on cleaned string...');
+      parsedAnswers = JSON.parse(cleanedJsonString);
+      console.log('JSON parsing successful!');
+      console.log('Parsed object keys:', Object.keys(parsedAnswers));
+      console.log('Answers array length:', parsedAnswers.answers?.length);
     } catch (parseError) {
-      console.error('JSON parsing failed:', parseError.message);
-      console.error('Response preview:', responseText.substring(0, 500));
+      console.error('=== JSON PARSING FAILED ===');
+      console.error('Parse error type:', parseError.constructor.name);
+      console.error('Parse error message:', parseError.message);
+      console.error('Original JSON string (first 500 chars):', jsonString.substring(0, 500));
+      console.error('Cleaned JSON string (first 500 chars):', cleanedJsonString.substring(0, 500));
+      console.error('Full response (first 1000 chars):', responseText.substring(0, 1000));
 
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Failed to parse Claude response',
-          details: parseError.message,
-          responsePreview: responseText.substring(0, 300)
+          parseErrorType: parseError.constructor.name,
+          parseErrorMessage: parseError.message,
+          responsePreview: responseText.substring(0, 800),
+          originalJson: jsonString.substring(0, 400),
+          cleanedJson: cleanedJsonString.substring(0, 400),
+          jsonExtractionMethod: codeBlockMatch ? 'code-block' : (jsonMatch ? 'regex-match' : 'full-response')
         })
       };
     }
@@ -226,13 +396,20 @@ Return ONLY valid JSON in this exact format:
     // Validate response structure
     if (!parsedAnswers.answers || !Array.isArray(parsedAnswers.answers)) {
       console.error('Invalid response structure:', Object.keys(parsedAnswers));
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Invalid response structure from Claude',
-          details: 'Missing answers array',
-          received: Object.keys(parsedAnswers)
+
+      // Fallback: Create basic answers if Claude didn't return proper structure
+      console.log('Creating fallback answers...');
+      parsedAnswers = {
+        answers: questions.map((question, index) => {
+          const questionMetadata = questionsWithMethodologies[index];
+          return {
+            question: question,
+            type: questionMetadata.type,
+            methodology: questionMetadata.framework.name,
+            full: "I apologize, but there was an issue generating the full answer. Please try again.",
+            concise: "Answer generation failed. Please retry.",
+            keyPoints: ["Please try generating answers again", "The system encountered a temporary issue", "Your question has been classified correctly", "The methodology has been determined", "Retry for proper answers"]
+          };
         })
       };
     }
@@ -240,9 +417,12 @@ Return ONLY valid JSON in this exact format:
     // Validate and clean answers
     const validatedAnswers = parsedAnswers.answers.map((answer, index) => {
       const questionText = questions[index] || `Question ${index + 1}`;
+      const questionMetadata = questionsWithMethodologies[index];
 
       return {
         question: answer.question || questionText,
+        methodology: answer.methodology || questionMetadata?.framework.name || 'Structured Response',
+        type: answer.type || questionMetadata?.type || 'general',
         full: cleanTextContent(answer.full || 'Answer generation failed for this question.'),
         concise: cleanTextContent(answer.concise || answer.brief || answer.short || 'Brief answer generation failed.'),
         keyPoints: Array.isArray(answer.keyPoints) ?
@@ -262,25 +442,36 @@ Return ONLY valid JSON in this exact format:
       body: JSON.stringify({
         answers: validatedAnswers,
         metadata: {
-          style: selectedStyle,
           questionCount: questions.length,
           role: role,
           experienceLevel: experienceLevel,
           companyName: companyName,
           generatedAt: new Date().toISOString(),
-          model: 'claude-3-haiku'
+          model: 'claude-3-haiku',
+          methodologies: questionsWithMethodologies.map(q => ({
+            question: q.question.substring(0, 50) + '...',
+            type: q.type,
+            methodology: q.framework.name
+          }))
         }
       })
     };
 
   } catch (error) {
-    console.error('Generate answers error:', error);
+    console.error('=== FATAL ERROR IN GENERATE ANSWERS ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Event body at error:', event.body);
+
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal Server Error',
+        errorType: error.constructor.name,
         details: error.message,
+        stack: error.stack?.split('\n').slice(0, 5),
         timestamp: new Date().toISOString()
       })
     };
