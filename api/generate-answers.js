@@ -332,14 +332,55 @@ Return only valid JSON in this format:
       console.log('Found JSON in code block');
       jsonString = codeBlockMatch[1].trim();
     } else {
-      // Method 2: Look for complete JSON object
-      jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        console.log('Found JSON object with regex');
-        jsonString = jsonMatch[0];
+      // Method 2: Find the first complete JSON object with proper bracket matching
+      console.log('Looking for properly balanced JSON object...');
+      const startIndex = responseText.indexOf('{');
+      if (startIndex !== -1) {
+        let bracketCount = 0;
+        let endIndex = -1;
+        let inString = false;
+        let escapeNext = false;
+
+        for (let i = startIndex; i < responseText.length; i++) {
+          const char = responseText[i];
+
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+
+          if (!inString) {
+            if (char === '{') {
+              bracketCount++;
+            } else if (char === '}') {
+              bracketCount--;
+              if (bracketCount === 0) {
+                endIndex = i;
+                break;
+              }
+            }
+          }
+        }
+
+        if (endIndex !== -1) {
+          jsonString = responseText.substring(startIndex, endIndex + 1);
+          console.log('Found balanced JSON object, length:', jsonString.length);
+        } else {
+          console.log('Could not find balanced JSON, using entire response');
+          jsonString = responseText;
+        }
       } else {
-        // Method 3: Assume the entire response is JSON
-        console.log('Using entire response as JSON');
+        console.log('No opening brace found, using entire response');
         jsonString = responseText;
       }
     }
@@ -388,7 +429,7 @@ Return only valid JSON in this format:
           responsePreview: responseText.substring(0, 800),
           originalJson: jsonString.substring(0, 400),
           cleanedJson: cleanedJsonString.substring(0, 400),
-          jsonExtractionMethod: codeBlockMatch ? 'code-block' : (jsonMatch ? 'regex-match' : 'full-response')
+          jsonExtractionMethod: codeBlockMatch ? 'code-block' : 'bracket-matching'
         })
       };
     }
