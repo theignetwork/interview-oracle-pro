@@ -444,14 +444,14 @@ class InterviewOraclePro {
 
     container.innerHTML = `
       <h3>Selected Questions (${selectedQuestions.length})</h3>
-      <ul class="selected-questions-list">
+      <div class="selected-questions-list">
         ${selectedQuestions.map((q, i) => `
-          <li class="selected-question-item">
+          <div class="selected-question-item">
             <span class="question-number">${i + 1}.</span>
             <span class="question-text">${this.sanitizeInput(q.text)}</span>
-          </li>
+          </div>
         `).join('')}
-      </ul>
+      </div>
     `;
   }
 
