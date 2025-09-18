@@ -111,13 +111,20 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
 
 CRITICAL: You must return COMPLETE, VALID JSON only. Do not truncate responses.
 
+IMPORTANT JSON FORMATTING RULES:
+- Escape all quotes in text content (use \\" for quotes inside strings)
+- Replace all newlines with \\n
+- Escape all backslashes as \\\\
+- Do not include unescaped control characters
+- Ensure all strings are properly quoted and escaped
+
 Return ONLY valid JSON in this exact format (ensure the JSON is complete and properly closed):
 {
   "answers": [
     {
       "question": "original question text",
-      "full": "Complete 200-300 word SOAR answer",
-      "concise": "60-80 word condensed answer",
+      "full": "Complete 200-300 word SOAR answer with properly escaped quotes and newlines",
+      "concise": "60-80 word condensed answer with escaped characters",
       "keyPoints": [
         "Key talking point 1",
         "Key talking point 2",
@@ -129,7 +136,7 @@ Return ONLY valid JSON in this exact format (ensure the JSON is complete and pro
   ]
 }
 
-IMPORTANT: Ensure the JSON response is COMPLETE with proper closing braces and brackets. Do not cut off mid-sentence.`;
+CRITICAL: All text content must have properly escaped quotes (\"), newlines (\\n), and other control characters to create valid JSON.`;
 
     // Send request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -167,15 +174,19 @@ IMPORTANT: Ensure the JSON response is COMPLETE with proper closing braces and b
 
     const apiResponse = await response.json();
 
-    // Parse Claude's response with enhanced validation
+    // Parse Claude's response with enhanced validation and escaping
     let parsedContent;
     try {
-      const responseText = apiResponse.content[0].text.trim();
-      console.log('Raw Claude response length:', responseText.length);
-      console.log('Raw Claude response preview:', responseText.substring(0, 200) + '...');
+      const rawResponseText = apiResponse.content[0].text.trim();
+      console.log('Raw Claude response length:', rawResponseText.length);
+      console.log('Raw Claude response preview:', rawResponseText.substring(0, 200) + '...');
+
+      // Extract JSON from response
+      const jsonMatch = rawResponseText.match(/\{[\s\S]*\}/);
+      let jsonString = jsonMatch ? jsonMatch[0] : rawResponseText;
 
       // Check if response is truncated (doesn't end with closing brace)
-      if (!responseText.endsWith('}')) {
+      if (!jsonString.endsWith('}')) {
         console.error('Response appears truncated - missing closing brace');
         return {
           statusCode: 500,
@@ -183,22 +194,61 @@ IMPORTANT: Ensure the JSON response is COMPLETE with proper closing braces and b
           body: JSON.stringify({
             error: 'Incomplete response from Claude',
             details: 'Response was truncated - increase max_tokens or reduce question count',
-            responseLength: responseText.length,
-            responseEnding: responseText.slice(-100)
+            responseLength: rawResponseText.length,
+            responseEnding: rawResponseText.slice(-100)
           })
         };
       }
 
-      // Try to extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const jsonString = jsonMatch[0];
-        console.log('Extracted JSON length:', jsonString.length);
-        parsedContent = JSON.parse(jsonString);
-      } else {
-        console.log('No JSON match found, trying direct parse');
-        parsedContent = JSON.parse(responseText);
+      // Properly escape special characters in JSON string values
+      function sanitizeJsonString(str) {
+        // Find all string values in the JSON and escape them properly
+        return str.replace(/"([^"]*(?:\\.[^"]*)*)"/g, (match, content) => {
+          // Skip if this is a JSON key (followed by :)
+          const nextChar = str[str.indexOf(match) + match.length];
+          if (nextChar === ':') {
+            return match; // Don't escape JSON keys
+          }
+
+          // Escape special characters in string content
+          const escapedContent = content
+            .replace(/\\/g, '\\\\')    // Escape backslashes first
+            .replace(/"/g, '\\"')      // Escape quotes
+            .replace(/\n/g, '\\n')     // Escape newlines
+            .replace(/\r/g, '\\r')     // Escape carriage returns
+            .replace(/\t/g, '\\t')     // Escape tabs
+            .replace(/\b/g, '\\b')     // Escape backspaces
+            .replace(/\f/g, '\\f')     // Escape form feeds
+            .replace(/[\x00-\x1F\x7F]/g, ''); // Remove other control chars
+
+          return `"${escapedContent}"`;
+        });
       }
+
+      const sanitizedJsonString = sanitizeJsonString(jsonString);
+      console.log('Sanitized JSON length:', sanitizedJsonString.length);
+
+      // Validate JSON before parsing
+      try {
+        JSON.parse(sanitizedJsonString);
+        console.log('JSON validation successful');
+      } catch (validationError) {
+        console.error('JSON validation failed:', validationError.message);
+        console.error('Problematic JSON:', sanitizedJsonString.substring(0, 500));
+
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Invalid JSON from Claude',
+            details: `JSON validation failed: ${validationError.message}`,
+            jsonPreview: sanitizedJsonString.substring(0, 500) + '...'
+          })
+        };
+      }
+
+      // Parse the validated JSON
+      parsedContent = JSON.parse(sanitizedJsonString);
 
       // Validate JSON structure
       if (!parsedContent || typeof parsedContent !== 'object') {
