@@ -1,0 +1,22 @@
+[build]
+  functions = "api"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Allow embedding Interview Oracle on your blog + subdomains
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Removed X-Frame-Options (was blocking iframe embeds)
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Content-Security-Policy = "default-src 'self' https: data: blob:; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; connect-src 'self' https:; frame-ancestors 'self' https://blog.theinterviewguys.com https://*.theinterviewguys.com"
+
+# Keep API CORS settings
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "POST, OPTIONS"

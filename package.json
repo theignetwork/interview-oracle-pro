@@ -1,0 +1,16 @@
+{
+  "name": "interview-oracle",
+  "version": "1.0.0",
+  "description": "AI-powered interview question predictor by The Interview Guys",
+  "author": "The Interview Guys",
+  "private": true,
+  "scripts": {
+    "serve": "npx http-server -p 8080"
+  },
+  "keywords": [
+    "interview",
+    "job-search",
+    "ai",
+    "career"
+  ]
+}
