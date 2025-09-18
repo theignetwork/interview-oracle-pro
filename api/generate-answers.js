@@ -136,7 +136,7 @@ Return ONLY valid JSON in this exact format:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', // Using Sonnet 4 for best quality
+        model: 'claude-3-haiku-20240307', // Using Haiku for speed and cost efficiency
         max_tokens: 4000,
         temperature: 0.7,
         messages: [{
@@ -230,7 +230,7 @@ Return ONLY valid JSON in this exact format:
           experienceLevel: experienceLevel,
           companyName: companyName,
           generatedAt: new Date().toISOString(),
-          model: 'claude-sonnet-4'
+          model: 'claude-3-haiku'
         }
       })
     };
