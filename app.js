@@ -430,7 +430,7 @@ class InterviewOraclePro {
     const selectedQuestions = this.getSelectedQuestions();
 
     if (selectedQuestions.length === 0) {
-      container.innerHTML = '<p class="no-selection">Select questions from the Generate tab to create SOAR answers.</p>';
+      container.innerHTML = '<p class="no-selection">Select questions from the Generate tab to create tailored answers.</p>';
       return;
     }
 
@@ -459,7 +459,7 @@ class InterviewOraclePro {
 
     const formData = this.getQuestionFormData();
 
-    this.showLoading(true, 'Generating SOAR framework answers...');
+    this.showLoading(true, 'Generating tailored answers...');
 
     try {
       console.log('Generating answers for questions:', selectedQuestions);
@@ -493,7 +493,7 @@ class InterviewOraclePro {
       this.stats.totalAnswers += result.answers.length;
 
       // Add activity tracking
-      this.addActivity('answers_generated', `Created SOAR answers for ${result.answers.length} questions`);
+      this.addActivity('answers_generated', `Created tailored answers for ${result.answers.length} questions`);
 
       this.trackEvent('answers_generated', {
         answer_count: result.answers.length
@@ -791,7 +791,7 @@ class InterviewOraclePro {
 
     const stats = [
       { label: 'Questions Generated', value: this.stats.totalQuestions, icon: '⚡' },
-      { label: 'SOAR Answers Created', value: this.stats.totalAnswers, icon: '💡' },
+      { label: 'Tailored Answers Created', value: this.stats.totalAnswers, icon: '💡' },
       { label: 'Saved Sessions', value: this.savedSessions.length, icon: '💾' },
       { label: 'Days Active', value: this.calculateDaysActive(), icon: '📅' }
     ];
