@@ -308,7 +308,7 @@ Return only JSON:
     console.log('jsonString length:', jsonString?.length);
     console.log('jsonString preview:', jsonString?.substring(0, 300));
 
-    // The original JSON from Claude is actually valid, let's try parsing it directly first
+    // Try parsing original first, then apply minimal cleaning if needed
     let parsedAnswers;
     try {
       console.log('Attempting JSON.parse on original response...');
@@ -317,24 +317,42 @@ Return only JSON:
       console.log('Parsed object keys:', Object.keys(parsedAnswers));
       console.log('Answers array length:', parsedAnswers.answers?.length);
     } catch (parseError) {
-      console.error('=== JSON PARSING FAILED ===');
-      console.error('Parse error type:', parseError.constructor.name);
-      console.error('Parse error message:', parseError.message);
-      console.error('JSON string (first 500 chars):', jsonString.substring(0, 500));
-      console.error('Full response (first 1000 chars):', responseText.substring(0, 1000));
+      console.log('Original parsing failed, trying with control character cleaning...');
 
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Failed to parse Claude response',
-          parseErrorType: parseError.constructor.name,
-          parseErrorMessage: parseError.message,
-          responsePreview: responseText.substring(0, 800),
-          jsonString: jsonString.substring(0, 400),
-          jsonExtractionMethod: 'simple-trim'
-        })
-      };
+      // Apply minimal cleaning - only remove problematic control characters
+      const cleanedJsonString = jsonString
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars but keep \n and \r
+        .replace(/\n/g, '\\n')     // Escape remaining newlines
+        .replace(/\r/g, '\\r')     // Escape carriage returns
+        .replace(/\t/g, '\\t');    // Escape tabs
+
+      console.log('Cleaned string preview:', cleanedJsonString.substring(0, 300));
+
+      try {
+        parsedAnswers = JSON.parse(cleanedJsonString);
+        console.log('JSON parsing successful after cleaning!');
+        console.log('Parsed object keys:', Object.keys(parsedAnswers));
+        console.log('Answers array length:', parsedAnswers.answers?.length);
+      } catch (secondParseError) {
+        console.error('=== JSON PARSING FAILED AFTER CLEANING ===');
+        console.error('Original error:', parseError.message);
+        console.error('Cleaned error:', secondParseError.message);
+        console.error('JSON string (first 500 chars):', jsonString.substring(0, 500));
+        console.error('Full response (first 1000 chars):', responseText.substring(0, 1000));
+
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to parse Claude response',
+            originalError: parseError.message,
+            cleanedError: secondParseError.message,
+            responsePreview: responseText.substring(0, 800),
+            jsonString: jsonString.substring(0, 400),
+            jsonExtractionMethod: 'simple-trim'
+          })
+        };
+      }
     }
 
     // Validate response structure
