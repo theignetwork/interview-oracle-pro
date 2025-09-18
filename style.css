@@ -95,6 +95,7 @@ h6, .h6 {
 .app-header {
   margin-bottom: 2rem;
   background: rgba(21, 30, 40, 0.6);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(58, 75, 92, 0.3);
   border-radius: 16px;
@@ -192,6 +193,7 @@ h6, .h6 {
   gap: 0.5rem;
   margin-bottom: 2rem;
   background: rgba(25, 39, 52, 0.6);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(58, 75, 92, 0.3);
   padding: 0.5rem;
@@ -292,6 +294,7 @@ h6, .h6 {
 /* ===== FORMS ===== */
 .question-form {
   background: rgba(25, 39, 52, 0.7);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(58, 75, 92, 0.3);
   border-radius: 16px;
@@ -323,6 +326,7 @@ h6, .h6 {
   width: 100%;
   padding: 1rem;
   background: rgba(37, 51, 65, 0.8);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(58, 75, 92, 0.5);
   border-radius: 10px;
@@ -533,6 +537,7 @@ h6, .h6 {
 
 .question-card {
   background: rgba(37, 51, 65, 0.7);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 1.5rem;
@@ -644,6 +649,7 @@ h6, .h6 {
 
 .answer-section {
   background: rgba(25, 39, 52, 0.7);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(58, 75, 92, 0.3);
   border-radius: 16px;
@@ -930,6 +936,7 @@ h6, .h6 {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
