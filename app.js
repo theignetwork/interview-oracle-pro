@@ -174,6 +174,7 @@ class InterviewOraclePro {
         break;
       case 'stats':
         this.displayStats();
+        this.displayActivityTimeline();
         break;
       case 'answers':
         this.updateSelectedQuestionsPreview();
@@ -217,8 +218,9 @@ class InterviewOraclePro {
       // Update stats
       const totalQuestions = this.getTotalQuestionCount();
       this.stats.totalQuestions += totalQuestions;
-      this.stats.lastActivity = new Date().toISOString();
-      this.saveStats();
+
+      // Add activity tracking
+      this.addActivity('questions_generated', `Generated ${totalQuestions} questions for ${formData.role} role`);
 
       this.trackEvent('questions_generated', {
         role: formData.role,
@@ -500,8 +502,9 @@ class InterviewOraclePro {
 
       // Update stats
       this.stats.totalAnswers += result.answers.length;
-      this.stats.lastActivity = new Date().toISOString();
-      this.saveStats();
+
+      // Add activity tracking
+      this.addActivity('answers_generated', `Created SOAR answers for ${result.answers.length} questions`);
 
       this.trackEvent('answers_generated', {
         answer_count: result.answers.length,
@@ -632,9 +635,8 @@ class InterviewOraclePro {
       this.savedSessions.push(sessionData);
       this.saveSessions();
 
-      // Update stats
-      this.stats.savedCount = this.savedSessions.length;
-      this.saveStats();
+      // Add activity tracking
+      this.addActivity('session_saved', `Saved session: ${sessionData.role} at ${sessionData.companyName || 'Company'}`);
 
       this.showSuccessMessage('Session saved successfully!');
 
@@ -735,6 +737,9 @@ class InterviewOraclePro {
     this.displayQuestions();
     this.showQuestionsResults();
 
+    // Add activity tracking
+    this.addActivity('session_loaded', `Loaded session: ${session.role} at ${session.companyName || 'Company'}`);
+
     this.showSuccessMessage('Session loaded successfully!');
 
     this.trackEvent('session_loaded', { session_id: sessionId });
@@ -768,10 +773,8 @@ class InterviewOraclePro {
     const stats = [
       { label: 'Questions Generated', value: this.stats.totalQuestions, icon: '⚡' },
       { label: 'SOAR Answers Created', value: this.stats.totalAnswers, icon: '💡' },
-      { label: 'Saved Sessions', value: this.stats.savedCount, icon: '💾' },
-      { label: 'Days Active', value: this.calculateDaysActive(), icon: '📅' },
-      { label: 'Success Rate', value: this.calculateSuccessRate() + '%', icon: '📈' },
-      { label: 'Total Questions', value: this.getTotalQuestionCount(), icon: '📝' }
+      { label: 'Saved Sessions', value: this.savedSessions.length, icon: '💾' },
+      { label: 'Days Active', value: this.calculateDaysActive(), icon: '📅' }
     ];
 
     statsGrid.innerHTML = stats.map(stat => `
@@ -784,24 +787,72 @@ class InterviewOraclePro {
   }
 
   calculateDaysActive() {
-    if (!this.stats.firstActivity) return 0;
-    const first = new Date(this.stats.firstActivity);
-    const now = new Date();
-    return Math.ceil((now - first) / (1000 * 60 * 60 * 24));
+    if (!this.stats.activeDays || this.stats.activeDays.length === 0) return 0;
+    return this.stats.activeDays.length;
   }
 
-  calculateSuccessRate() {
-    if (this.stats.totalQuestions === 0) return 0;
-    return Math.round((this.stats.totalAnswers / this.stats.totalQuestions) * 100);
+  displayActivityTimeline() {
+    const timelineContainer = document.getElementById('timelineContent');
+    if (!timelineContainer) return;
+
+    if (!this.stats.recentActivity || this.stats.recentActivity.length === 0) {
+      timelineContainer.innerHTML = `
+        <div class="empty-activity">
+          <p>No recent activity. Start generating questions to see your activity here!</p>
+        </div>
+      `;
+      return;
+    }
+
+    timelineContainer.innerHTML = this.stats.recentActivity.map(activity => `
+      <div class="activity-item">
+        <div class="activity-icon">${this.getActivityIcon(activity.type)}</div>
+        <div class="activity-content">
+          <div class="activity-description">${activity.details}</div>
+          <div class="activity-time">${this.formatRelativeTime(activity.timestamp)}</div>
+        </div>
+      </div>
+    `).join('');
   }
+
+  getActivityIcon(type) {
+    const icons = {
+      questions_generated: '⚡',
+      answers_generated: '💡',
+      session_saved: '💾',
+      session_loaded: '📂'
+    };
+    return icons[type] || '📝';
+  }
+
+  formatRelativeTime(timestamp) {
+    const now = new Date();
+    const activityTime = new Date(timestamp);
+    const diffMs = now - activityTime;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 7) {
+      return activityTime.toLocaleDateString();
+    } else if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      return diffMins > 0 ? `${diffMins} minute${diffMins > 1 ? 's' : ''} ago` : 'Just now';
+    }
+  }
+
 
   getDefaultStats() {
     return {
       totalQuestions: 0,
       totalAnswers: 0,
-      savedCount: 0,
       firstActivity: null,
-      lastActivity: null
+      lastActivity: null,
+      activeDays: [],
+      recentActivity: []
     };
   }
 
@@ -810,10 +861,35 @@ class InterviewOraclePro {
       if (!this.stats.firstActivity) {
         this.stats.firstActivity = new Date().toISOString();
       }
+      this.stats.lastActivity = new Date().toISOString();
+
+      // Track unique active days
+      const today = new Date().toDateString();
+      if (!this.stats.activeDays.includes(today)) {
+        this.stats.activeDays.push(today);
+      }
+
       localStorage.setItem('interview_oracle_pro_stats', JSON.stringify(this.stats));
     } catch (error) {
       console.error('Error saving stats:', error);
     }
+  }
+
+  addActivity(type, details) {
+    const activity = {
+      type,
+      details,
+      timestamp: new Date().toISOString()
+    };
+
+    this.stats.recentActivity.unshift(activity);
+
+    // Keep only last 10 activities
+    if (this.stats.recentActivity.length > 10) {
+      this.stats.recentActivity = this.stats.recentActivity.slice(0, 10);
+    }
+
+    this.saveStats();
   }
 
   saveSessions() {
