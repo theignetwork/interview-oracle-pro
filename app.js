@@ -1384,7 +1384,7 @@ class InterviewOraclePro {
       });
 
       // Redirect to Interview Coach
-      const coachUrl = `https://igcareercoach.com/practice?prep_session=${prepSession.id}`;
+      const coachUrl = `https://the-ig-interview-coach.netlify.app/practice?prep_session=${prepSession.id}`;
       window.location.href = coachUrl;
 
     } catch (error) {
