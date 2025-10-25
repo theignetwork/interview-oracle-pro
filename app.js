@@ -914,25 +914,39 @@ class InterviewOraclePro {
     emptyState?.classList.add('hidden');
 
     container.innerHTML = this.savedSessions.map(session => `
-      <div class="session-card" onclick="app.loadSession('${session.id}')">
-        <div class="session-header">
-          <h3 class="session-title">${session.role} - ${session.experienceLevel}</h3>
-          <div class="session-date">${this.formatDate(session.createdAt)}</div>
+      <div class="session-card">
+        <div class="session-card-header">
+          <h3 class="session-title">${session.metadata?.jobTitle || session.role || 'Interview Session'}</h3>
+          <span class="session-date">${this.formatDate(session.metadata?.createdAt || session.createdAt)}</span>
         </div>
+
         <div class="session-stats">
-          <span class="session-stat">
-            <strong>${session.questions?.length || 0}</strong> Questions
+          <span class="stat-item">
+            <span class="stat-icon">📝</span>
+            <span class="stat-value">${session.questions?.length || 0} questions</span>
           </span>
-          <span class="session-stat">
-            <strong>${session.answers?.length || 0}</strong> Answers
+          <span class="stat-item">
+            <span class="stat-icon">💡</span>
+            <span class="stat-value">${Object.keys(session.answers || {}).length} SOAR answers</span>
           </span>
         </div>
-        <div class="session-actions" onclick="event.stopPropagation()">
-          <button class="action-button" onclick="app.loadSession('${session.id}')">
-            Load Session
-          </button>
-          <button class="action-button" onclick="app.deleteSession('${session.id}')">
-            Delete
+
+        <div class="session-actions">
+          <div class="session-actions-row">
+            <button class="btn-secondary" onclick="app.loadSession('${session.id}')">
+              View Details
+            </button>
+            <button class="btn-secondary" onclick="app.deleteSession('${session.id}')">
+              Delete
+            </button>
+          </div>
+
+          <!-- NEW: Practice Live button -->
+          <button class="btn-primary practice-live-btn"
+                  onclick="app.practiceWithCoach('${session.id}')"
+                  title="Practice these questions with AI interviewer">
+            <span class="btn-icon">🎙️</span>
+            <span class="btn-text">Practice Live Interview</span>
           </button>
         </div>
       </div>
@@ -1289,6 +1303,220 @@ class InterviewOraclePro {
     }
 
     console.log('Event tracked:', eventName, properties);
+  }
+
+  // ===== PRACTICE LIVE INTEGRATION =====
+
+  /**
+   * Save session to Supabase and redirect to Interview Coach
+   * This is the main integration point between Oracle PRO and Interview Coach
+   */
+  async practiceWithCoach(localSessionId) {
+    // Check if Supabase is available
+    if (!window.supabaseClient) {
+      this.showError('Interview Coach integration is currently unavailable. Please try exporting this session instead.');
+      return;
+    }
+
+    try {
+      // Show loading state
+      const button = event.target.closest('.practice-live-btn');
+      if (button) {
+        button.classList.add('loading');
+        button.disabled = true;
+      }
+
+      // Get session from localStorage
+      const session = this.savedSessions.find(s => s.id === localSessionId);
+
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      // Get member email (from MemberPress)
+      const memberEmail = this.getMemberEmail();
+
+      if (!memberEmail) {
+        throw new Error('Please log in to use Practice Live feature');
+      }
+
+      // Format questions for Interview Coach
+      const formattedQuestions = this.formatQuestionsForCoach(session);
+
+      // Save to Supabase
+      console.log('Saving prep session to Supabase...');
+
+      const { data: prepSession, error } = await window.supabaseClient
+        .from('oracle_prep_sessions')
+        .insert({
+          member_email: memberEmail,
+          job_description: session.jobDescription || '',
+          job_title: session.metadata?.jobTitle || session.role || 'Practice Interview',
+          company_name: session.companyName || '',
+          role: session.role || '',
+          experience_level: session.experienceLevel || '',
+          questions: formattedQuestions,
+          status: 'prepared',
+          metadata: {
+            oracle_session_id: session.id,
+            generated_at: session.metadata?.createdAt || session.createdAt || new Date().toISOString(),
+            total_questions: formattedQuestions.length,
+            has_soar_answers: Object.keys(session.answers || {}).length > 0,
+            source: 'oracle_pro'
+          }
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error('Failed to save prep session');
+      }
+
+      console.log('✅ Prep session saved:', prepSession.id);
+
+      // Track analytics
+      this.trackEvent('practice_started', {
+        session_id: localSessionId,
+        prep_session_id: prepSession.id,
+        question_count: formattedQuestions.length,
+        has_answers: Object.keys(session.answers || {}).length > 0
+      });
+
+      // Redirect to Interview Coach
+      const coachUrl = `https://igcareercoach.com/practice?prep_session=${prepSession.id}`;
+      window.location.href = coachUrl;
+
+    } catch (error) {
+      console.error('Error starting practice:', error);
+
+      // Show user-friendly error
+      let errorMessage = 'Failed to start practice session. ';
+
+      if (error.message.includes('log in')) {
+        errorMessage += 'Please make sure you are logged in.';
+      } else if (error.message.includes('not found')) {
+        errorMessage += 'Session data not found.';
+      } else {
+        errorMessage += 'Please try again or export this session instead.';
+      }
+
+      this.showError(errorMessage);
+
+      // Remove loading state
+      const button = document.querySelector('.practice-live-btn.loading');
+      if (button) {
+        button.classList.remove('loading');
+        button.disabled = false;
+      }
+    }
+  }
+
+  /**
+   * Get member email from MemberPress
+   */
+  getMemberEmail() {
+    // Try multiple sources for member email
+
+    // 1. Check if MemberPress provides it globally
+    if (window.memberPressUser && window.memberPressUser.email) {
+      return window.memberPressUser.email;
+    }
+
+    // 2. Check localStorage (may be stored after login)
+    const storedEmail = localStorage.getItem('member_email');
+    if (storedEmail) {
+      return storedEmail;
+    }
+
+    // 3. Check if user is logged in via WordPress
+    if (window.wpUser && window.wpUser.email) {
+      return window.wpUser.email;
+    }
+
+    // 4. Fallback: Check session storage
+    const sessionEmail = sessionStorage.getItem('member_email');
+    if (sessionEmail) {
+      return sessionEmail;
+    }
+
+    // 5. Last resort: prompt user
+    console.warn('Member email not found automatically');
+    return null;
+  }
+
+  /**
+   * Format questions for Interview Coach compatibility
+   */
+  formatQuestionsForCoach(session) {
+    // Flatten all questions from the session
+    const allQuestions = [];
+
+    // Handle different session structures
+    if (session.questions && Array.isArray(session.questions)) {
+      // Direct array of questions
+      allQuestions.push(...session.questions);
+    } else if (session.questions && typeof session.questions === 'object') {
+      // Questions organized by category
+      Object.values(session.questions).forEach(categoryQuestions => {
+        if (Array.isArray(categoryQuestions)) {
+          allQuestions.push(...categoryQuestions);
+        }
+      });
+    }
+
+    // Also include questions from currentQuestions if session structure has it
+    if (session.currentQuestions) {
+      Object.values(session.currentQuestions).forEach(categoryQuestions => {
+        if (Array.isArray(categoryQuestions)) {
+          allQuestions.push(...categoryQuestions);
+        }
+      });
+    }
+
+    return allQuestions.map((q, index) => {
+      // Handle both string questions and object questions
+      const questionText = typeof q === 'string' ? q : (q.text || q.question || q);
+      const category = q.category || this.categorizeQuestion(questionText);
+      const difficulty = q.difficulty || 'Medium';
+
+      return {
+        text: questionText,
+        category: category,
+        difficulty: difficulty,
+        order: index,
+        // Include SOAR answer if it exists
+        soar_answer: session.answers?.[index] || null
+      };
+    });
+  }
+
+  /**
+   * Simple question categorization based on keywords
+   */
+  categorizeQuestion(text) {
+    const lowerText = text.toLowerCase();
+
+    if (lowerText.includes('tell me about a time') ||
+        lowerText.includes('describe a situation') ||
+        lowerText.includes('give me an example')) {
+      return 'Behavioral';
+    }
+
+    if (lowerText.includes('technical') ||
+        lowerText.includes('how would you') ||
+        lowerText.includes('design') ||
+        lowerText.includes('implement')) {
+      return 'Technical';
+    }
+
+    if (lowerText.includes('why') ||
+        lowerText.includes('what motivates') ||
+        lowerText.includes('where do you see')) {
+      return 'Motivational';
+    }
+
+    return 'General';
   }
 
 }

@@ -1358,3 +1358,120 @@ h6, .h6 {
     justify-content: center;
   }
 }
+
+/* ================================
+   Practice Live Button Styling
+   ================================ */
+
+.practice-live-btn {
+  background: linear-gradient(135deg, #2EB1BC 0%, #1E8C94 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(46, 177, 188, 0.3);
+  font-size: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.practice-live-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 177, 188, 0.4);
+  background: linear-gradient(135deg, #1E8C94 0%, #2EB1BC 100%);
+}
+
+.practice-live-btn:active {
+  transform: translateY(0);
+}
+
+.practice-live-btn .btn-icon {
+  font-size: 1.2em;
+}
+
+.practice-live-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading state for practice button */
+.practice-live-btn.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+
+.practice-live-btn.loading::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid white;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Enhanced session card layout for new button */
+.session-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.session-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.session-actions-row .btn-secondary {
+  flex: 1;
+}
+
+/* Error message styling (enhanced for fixed positioning) */
+.error-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #c00;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  max-width: 500px;
+  animation: slideDown 0.3s ease;
+}
+
+.error-message.hidden {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

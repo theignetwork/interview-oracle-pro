@@ -16,6 +16,24 @@
   </script>
 
   <link rel="stylesheet" href="style.css">
+
+  <!-- Supabase Client for Interview Coach Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Initialize Supabase client
+    window.supabaseClient = null;
+
+    try {
+      const SUPABASE_URL = 'https://snhezroznzsjcqqxpjpp.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuaGV6cm96bnpzamNxcXhwanBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjYwMTYxNTcsImV4cCI6MjA0MTU5MjE1N30.6Ky3_lk_aJMPTGHHAUh4h1oGODyOaCMO8mGQf0s2mWc';
+
+      window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('✅ Supabase client initialized');
+    } catch (error) {
+      console.warn('⚠️ Supabase client failed to initialize:', error);
+      // App continues to work without Supabase
+    }
+  </script>
 </head>
 <body>
   <div class="app-container">
