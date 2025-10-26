@@ -1393,8 +1393,9 @@ class InterviewOraclePro {
         has_answers: Object.keys(session.answers || {}).length > 0
       });
 
-      // Redirect to Interview Coach
-      const coachUrl = `https://the-ig-interview-coach.netlify.app/practice?prep_session=${prepSession.id}`;
+      // Redirect to Interview Coach with cache busting timestamp
+      const timestamp = Date.now();
+      const coachUrl = `https://the-ig-interview-coach.netlify.app/practice?prep_session=${prepSession.id}&t=${timestamp}`;
       window.location.href = coachUrl;
 
     } catch (error) {
