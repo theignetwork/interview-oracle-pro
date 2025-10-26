@@ -1337,7 +1337,7 @@ class InterviewOraclePro {
       const memberEmail = this.getMemberEmail();
 
       if (!memberEmail) {
-        throw new Error('Please log in to use Practice Live feature');
+        throw new Error('Valid email required to use Practice Live feature');
       }
 
       // Format questions for Interview Coach
@@ -1393,8 +1393,8 @@ class InterviewOraclePro {
       // Show user-friendly error
       let errorMessage = 'Failed to start practice session. ';
 
-      if (error.message.includes('log in')) {
-        errorMessage += 'Please make sure you are logged in.';
+      if (error.message.includes('email')) {
+        errorMessage += 'A valid email address is required to save your practice session.';
       } else if (error.message.includes('not found')) {
         errorMessage += 'Session data not found.';
       } else {
@@ -1441,8 +1441,24 @@ class InterviewOraclePro {
     }
 
     // 5. Last resort: prompt user
-    console.warn('Member email not found automatically');
+    console.warn('Member email not found automatically - prompting user');
+    const promptedEmail = prompt('Please enter your email address to save this practice session:');
+
+    if (promptedEmail && this.isValidEmail(promptedEmail)) {
+      // Store for future use
+      localStorage.setItem('member_email', promptedEmail);
+      return promptedEmail;
+    }
+
     return null;
+  }
+
+  /**
+   * Validate email format
+   */
+  isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 
   /**
