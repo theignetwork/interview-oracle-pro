@@ -1429,19 +1429,18 @@ h6, .h6 {
 
 /* Enhanced session card layout for new button */
 .session-actions {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 16px;
 }
 
-.session-actions-row {
-  display: flex;
-  gap: 8px;
+.session-actions .practice-live-btn {
+  grid-column: 1 / -1; /* Span full width */
 }
 
-.session-actions-row .btn-secondary {
-  flex: 1;
+.session-actions-row {
+  display: contents; /* Allow grid items to flow into parent grid */
 }
 
 /* Error message styling (enhanced for fixed positioning) */
@@ -1474,4 +1473,16 @@ h6, .h6 {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* Practice Live button wrapper for Answers tab */
+.practice-live-wrapper {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.practice-live-wrapper .practice-live-btn {
+  max-width: 400px;
+  width: 100%;
 }

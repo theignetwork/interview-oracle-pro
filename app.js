@@ -544,6 +544,19 @@ class InterviewOraclePro {
 
     container.innerHTML = '';
 
+    // Add Practice Live button at the top
+    const practiceButtonWrapper = document.createElement('div');
+    practiceButtonWrapper.className = 'practice-live-wrapper';
+    practiceButtonWrapper.innerHTML = `
+      <button class="btn-primary practice-live-btn practice-live-answers-btn"
+              onclick="app.practiceCurrentSession()"
+              title="Save and practice these questions with AI interviewer">
+        <span class="btn-icon">🎙️</span>
+        <span class="btn-text">Practice Live Interview</span>
+      </button>
+    `;
+    container.appendChild(practiceButtonWrapper);
+
     this.currentAnswers.forEach((answer, index) => {
       const answerSection = document.createElement('div');
       answerSection.className = 'answer-section';
@@ -1404,6 +1417,59 @@ class InterviewOraclePro {
         button.classList.remove('loading');
         button.disabled = false;
       }
+    }
+  }
+
+  /**
+   * Practice with current session from Answers tab
+   * Saves the current session first if needed, then redirects to Interview Coach
+   */
+  async practiceCurrentSession() {
+    try {
+      // Check if current session exists in saved sessions
+      const currentSessionData = {
+        jobDescription: document.getElementById('jobDescription')?.value || '',
+        role: document.getElementById('roleSelector')?.value || '',
+        experienceLevel: document.getElementById('experienceLevel')?.value || '',
+        companyName: document.getElementById('companyName')?.value || '',
+        questions: this.currentQuestions || [],
+        answers: {},
+        metadata: {
+          jobTitle: document.getElementById('roleSelector')?.value || 'Interview Session',
+          createdAt: new Date().toISOString()
+        }
+      };
+
+      // Build answers object from currentAnswers
+      this.currentAnswers.forEach((answer, index) => {
+        if (answer.question) {
+          currentSessionData.answers[answer.question] = {
+            full: answer.full,
+            concise: answer.concise,
+            keyPoints: answer.keyPoints,
+            methodology: answer.methodology
+          };
+        }
+      });
+
+      // Generate session ID
+      const sessionId = `session_${Date.now()}`;
+      currentSessionData.id = sessionId;
+      currentSessionData.createdAt = new Date().toISOString();
+
+      // Save to localStorage
+      this.savedSessions.unshift(currentSessionData);
+      this.savedSessions = this.savedSessions.slice(0, 50); // Keep last 50
+      localStorage.setItem('oracleSessions', JSON.stringify(this.savedSessions));
+
+      console.log('Current session saved:', sessionId);
+
+      // Now practice with this session
+      await this.practiceWithCoach(sessionId);
+
+    } catch (error) {
+      console.error('Error practicing current session:', error);
+      this.showError('Failed to start practice session. Please try again.');
     }
   }
 
