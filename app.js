@@ -1333,12 +1333,9 @@ class InterviewOraclePro {
         throw new Error('Session not found');
       }
 
-      // Get member email (from MemberPress)
-      const memberEmail = this.getMemberEmail();
-
-      if (!memberEmail) {
-        throw new Error('Valid email required to use Practice Live feature');
-      }
+      // Use anonymous identifier (no email required)
+      // Generate a unique identifier based on session ID
+      const anonymousEmail = `anonymous_${session.id}@oracle-pro.local`;
 
       // Format questions for Interview Coach
       const formattedQuestions = this.formatQuestionsForCoach(session);
@@ -1349,7 +1346,7 @@ class InterviewOraclePro {
       const { data: prepSession, error } = await window.supabaseClient
         .from('oracle_prep_sessions')
         .insert({
-          member_email: memberEmail,
+          member_email: anonymousEmail,
           job_description: session.jobDescription || '',
           job_title: session.metadata?.jobTitle || session.role || 'Practice Interview',
           company_name: session.companyName || '',
@@ -1393,9 +1390,7 @@ class InterviewOraclePro {
       // Show user-friendly error
       let errorMessage = 'Failed to start practice session. ';
 
-      if (error.message.includes('email')) {
-        errorMessage += 'A valid email address is required to save your practice session.';
-      } else if (error.message.includes('not found')) {
+      if (error.message.includes('not found')) {
         errorMessage += 'Session data not found.';
       } else {
         errorMessage += 'Please try again or export this session instead.';
@@ -1410,55 +1405,6 @@ class InterviewOraclePro {
         button.disabled = false;
       }
     }
-  }
-
-  /**
-   * Get member email from MemberPress
-   */
-  getMemberEmail() {
-    // Try multiple sources for member email
-
-    // 1. Check if MemberPress provides it globally
-    if (window.memberPressUser && window.memberPressUser.email) {
-      return window.memberPressUser.email;
-    }
-
-    // 2. Check localStorage (may be stored after login)
-    const storedEmail = localStorage.getItem('member_email');
-    if (storedEmail) {
-      return storedEmail;
-    }
-
-    // 3. Check if user is logged in via WordPress
-    if (window.wpUser && window.wpUser.email) {
-      return window.wpUser.email;
-    }
-
-    // 4. Fallback: Check session storage
-    const sessionEmail = sessionStorage.getItem('member_email');
-    if (sessionEmail) {
-      return sessionEmail;
-    }
-
-    // 5. Last resort: prompt user
-    console.warn('Member email not found automatically - prompting user');
-    const promptedEmail = prompt('Please enter your email address to save this practice session:');
-
-    if (promptedEmail && this.isValidEmail(promptedEmail)) {
-      // Store for future use
-      localStorage.setItem('member_email', promptedEmail);
-      return promptedEmail;
-    }
-
-    return null;
-  }
-
-  /**
-   * Validate email format
-   */
-  isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   }
 
   /**
