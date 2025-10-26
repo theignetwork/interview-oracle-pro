@@ -1503,21 +1503,40 @@ class InterviewOraclePro {
       });
     }
 
-    return allQuestions.map((q, index) => {
-      // Handle both string questions and object questions
-      const questionText = typeof q === 'string' ? q : (q.text || q.question || q);
-      const category = q.category || this.categorizeQuestion(questionText);
-      const difficulty = q.difficulty || 'Medium';
+    // session.answers is an object with question text as keys
+    const answers = session.answers || {};
 
-      return {
-        text: questionText,
-        category: category,
-        difficulty: difficulty,
-        order: index,
-        // Include SOAR answer if it exists
-        soar_answer: session.answers?.[index] || null
-      };
-    });
+    // ONLY include questions that have answers generated
+    const questionsWithAnswers = allQuestions
+      .map(q => {
+        // Handle both string questions and object questions
+        const questionText = typeof q === 'string' ? q : (q.text || q.question || q);
+        const category = q.category || this.categorizeQuestion(questionText);
+        const difficulty = q.difficulty || 'Medium';
+
+        // Check if this question has an answer
+        const hasAnswer = answers[questionText] != null;
+
+        return {
+          text: questionText,
+          category: category,
+          difficulty: difficulty,
+          hasAnswer: hasAnswer,
+          // Include SOAR answer if it exists (match by question text, not index)
+          soar_answer: answers[questionText] || null
+        };
+      })
+      .filter(q => q.hasAnswer); // Only keep questions with answers
+
+    console.log(`Formatted ${questionsWithAnswers.length} questions with answers for Interview Coach`);
+
+    return questionsWithAnswers.map((q, index) => ({
+      text: q.text,
+      category: q.category,
+      difficulty: q.difficulty,
+      order: index,
+      soar_answer: q.soar_answer
+    }));
   }
 
   /**
