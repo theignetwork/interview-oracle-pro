@@ -1486,3 +1486,75 @@ h6, .h6 {
   max-width: 400px;
   width: 100%;
 }
+/* Smart Context Success Banner */
+.smart-context-banner {
+  margin: 20px 0;
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+  border: 2px solid rgba(20, 184, 166, 0.4);
+  border-radius: 12px;
+  padding: 16px;
+  animation: slideDown 0.3s ease;
+}
+
+.smart-context-banner.hidden {
+  display: none;
+}
+
+.banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.banner-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.banner-title {
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.banner-description {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.banner-description strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.banner-close {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.banner-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

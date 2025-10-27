@@ -17,6 +17,12 @@
 
   <link rel="stylesheet" href="style.css">
 
+  <!-- Jose Library for JWT (Smart Context) -->
+  <script type="module">
+    import * as jose from 'https://cdn.jsdelivr.net/npm/jose@5.2.0/+esm';
+    window.jwtVerify = jose.jwtVerify;
+  </script>
+
   <!-- Supabase Client for Interview Coach Integration -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -91,6 +97,20 @@
         <div class="content-header">
           <h2 class="section-title">Generate Interview Questions</h2>
           <p class="section-description">Create personalized questions based on your job description</p>
+        </div>
+
+        <!-- Smart Context Success Banner -->
+        <div id="smartContextBanner" class="smart-context-banner hidden">
+          <div class="banner-content">
+            <div class="banner-icon">✨</div>
+            <div class="banner-text">
+              <div class="banner-title">Job Details Auto-Loaded!</div>
+              <div class="banner-description">
+                Context from <strong id="contextCompany">Career Hub</strong> - <span id="contextPosition">Position</span> has been automatically filled.
+              </div>
+            </div>
+            <button class="banner-close" id="closeBanner" aria-label="Close">×</button>
+          </div>
         </div>
 
         <form class="question-form" id="questionForm">
@@ -268,6 +288,108 @@
 
     </main>
   </div>
+
+  <!-- Smart Context Auto-Population Script -->
+  <script>
+    // Smart Context Detection and Auto-Fill
+    (async function() {
+      try {
+        // Check for context parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('context');
+
+        if (!token) {
+          console.log('[Oracle Smart Context] No context parameter found');
+          return;
+        }
+
+        console.log('[Oracle Smart Context] Context token detected, attempting to decode...');
+
+        // Wait for jose library to load
+        let attempts = 0;
+        while (!window.jwtVerify && attempts < 20) {
+          console.log('[Oracle Smart Context] Waiting for jose library...');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+
+        if (!window.jwtVerify) {
+          console.error('[Oracle Smart Context] Jose library failed to load');
+          return;
+        }
+
+        // Decode JWT token
+        const secret = new TextEncoder().encode('41d7608f24c106eeab002add62ea7b614173a6a6e9a95eaee7505936d8c51edc');
+        const { payload } = await window.jwtVerify(token, secret);
+
+        console.log('[Oracle Smart Context] Successfully decoded:', payload);
+
+        // Build job description from context
+        let jobDesc = '';
+
+        if (payload.companyName || payload.positionTitle) {
+          jobDesc += `Company: ${payload.companyName || 'Not specified'}\n`;
+          jobDesc += `Position: ${payload.positionTitle || 'Not specified'}\n\n`;
+        }
+
+        if (payload.location) jobDesc += `Location: ${payload.location}\n`;
+        if (payload.remoteType) jobDesc += `Work Type: ${payload.remoteType}\n`;
+        if (payload.salaryRange) jobDesc += `Salary: ${payload.salaryRange}\n`;
+        if (payload.location || payload.remoteType || payload.salaryRange) jobDesc += '\n';
+
+        if (payload.jobDescription) {
+          jobDesc += `Job Description:\n${payload.jobDescription}`;
+        }
+
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+          await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+        }
+
+        // Auto-fill the job description textarea
+        const textarea = document.getElementById('jobDescription');
+        if (textarea) {
+          textarea.value = jobDesc;
+
+          // Trigger char counter update if it exists
+          const charCount = document.getElementById('charCount');
+          if (charCount) {
+            charCount.textContent = jobDesc.length;
+          }
+
+          console.log('[Oracle Smart Context] Job description auto-filled successfully');
+        }
+
+        // Show success banner
+        const banner = document.getElementById('smartContextBanner');
+        const companyEl = document.getElementById('contextCompany');
+        const positionEl = document.getElementById('contextPosition');
+
+        if (banner) {
+          if (companyEl) companyEl.textContent = payload.companyName || 'Career Hub';
+          if (positionEl) positionEl.textContent = payload.positionTitle || 'Position';
+          banner.classList.remove('hidden');
+
+          // Add close button functionality
+          const closeBtn = document.getElementById('closeBanner');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              banner.classList.add('hidden');
+            });
+          }
+        }
+
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+
+        console.log('[Oracle Smart Context] ✅ Smart Context loaded successfully!');
+
+      } catch (error) {
+        console.error('[Oracle Smart Context] Failed to load context:', error);
+        // Fail silently - don't disrupt normal usage
+      }
+    })();
+  </script>
 
   <script src="app.js"></script>
 </body>
