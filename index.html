@@ -294,15 +294,23 @@
     // Smart Context Detection and Auto-Fill
     (async function() {
       try {
-        // Check for context parameter in URL hash fragment
+        // Check for context parameter in URL hash fragment (or fallback to query param)
         const hash = window.location.hash.substring(1); // Remove the '#'
         const hashParams = new URLSearchParams(hash);
-        const token = hashParams.get('context');
+        let token = hashParams.get('context');
+
+        // Fallback to query parameter for backwards compatibility
+        if (!token) {
+          const urlParams = new URLSearchParams(window.location.search);
+          token = urlParams.get('context');
+        }
 
         if (!token) {
-          console.log('[Oracle Smart Context] No context parameter found');
+          console.log('[Oracle Smart Context] No context parameter found in hash or query');
           return;
         }
+
+        console.log('[Oracle Smart Context] Token found, length:', token.length);
 
         console.log('[Oracle Smart Context] Context token detected, attempting to decode...');
 
