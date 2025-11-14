@@ -294,8 +294,24 @@
     // Smart Context Detection and Auto-Fill
     (async function() {
       try {
-        // Check for context parameter in URL hash fragment (or fallback to query param)
-        const hash = window.location.hash.substring(1); // Remove the '#'
+        // Check for context parameter in URL hash fragment
+        // Try parent window first (if in iframe), then current window
+        let hash = '';
+        try {
+          // If in iframe, try to read from parent window
+          if (window.parent && window.parent !== window) {
+            hash = window.parent.location.hash.substring(1);
+          }
+        } catch (e) {
+          // Cross-origin iframe, can't access parent
+          console.log('[Oracle Smart Context] Cannot access parent window (cross-origin)');
+        }
+
+        // Fallback to current window hash
+        if (!hash) {
+          hash = window.location.hash.substring(1);
+        }
+
         const hashParams = new URLSearchParams(hash);
         let token = hashParams.get('context');
 
