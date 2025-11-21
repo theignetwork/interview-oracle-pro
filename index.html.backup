@@ -303,22 +303,24 @@
           return;
         }
 
-        console.log('[Oracle Smart Context] Context token detected, verifying with server...');
-        console.log('[Oracle Smart Context] Context token detected, verifying with server...');
+        console.log('[Oracle Smart Context] Context token detected, attempting to decode...');
 
-        // Call server API to verify token (no secret in client!)
-        const response = await fetch('/api/verify-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
+        // Wait for jose library to load
+        let attempts = 0;
+        while (!window.jwtVerify && attempts < 20) {
+          console.log('[Oracle Smart Context] Waiting for jose library...');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
 
-        if (!response.ok) {
-          console.error('[Oracle Smart Context] Token verification failed');
+        if (!window.jwtVerify) {
+          console.error('[Oracle Smart Context] Jose library failed to load');
           return;
         }
 
-        const { payload } = await response.json();
+        // Decode JWT token
+        const secret = new TextEncoder().encode('41d7608f24c106eeab002add62ea7b614173a6a6e9a95eaee7505936d8c51edc');
+        const { payload } = await window.jwtVerify(token, secret);
 
         console.log('[Oracle Smart Context] Successfully decoded:', payload);
 
