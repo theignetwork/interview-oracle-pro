@@ -307,7 +307,7 @@
         console.log('[Oracle Smart Context] Context token detected, verifying with server...');
 
         // Call server API to verify token (no secret in client!)
-        const response = await fetch('/api/verify-token', {
+        const response = await fetch('/.netlify/functions/verify-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
