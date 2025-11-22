@@ -46,10 +46,10 @@ exports.handler = async (event) => {
     }
 
     // Get secret from server environment ONLY (not exposed to client!)
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.CONTEXT_SHARING_SECRET;
 
     if (!secret) {
-      console.error('[verify-token] JWT_SECRET not configured');
+      console.error('[verify-token] CONTEXT_SHARING_SECRET not configured');
       return {
         statusCode: 500,
         headers: {
