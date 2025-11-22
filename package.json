@@ -12,5 +12,8 @@
     "job-search",
     "ai",
     "career"
-  ]
+  ],
+  "dependencies": {
+    "jose": "^5.9.6"
+  }
 }
