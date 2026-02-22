@@ -279,8 +279,8 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
 
     // Call Claude API
     const claudeRequest = {
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8096,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
       temperature: 0.7,
       messages: [{
         role: 'user',
@@ -479,7 +479,7 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
           experienceLevel: experienceLevel,
           companyName: companyName,
           generatedAt: new Date().toISOString(),
-          model: 'claude-sonnet-4-6'
+          model: 'claude-haiku-4-5'
         }
       })
     };
