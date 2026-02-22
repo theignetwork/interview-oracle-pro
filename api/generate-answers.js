@@ -81,43 +81,50 @@ function getMethodologyFramework(questionType) {
     behavioral: {
       name: 'SOAR Method',
       structure: 'Situation, Obstacles, Actions, Results',
-      guidance: 'Use the SOAR framework: Situation (context), Obstacles (challenges), Actions (specific steps), Results (quantified outcomes). Provide concrete examples with measurable impact.',
+      guidance: 'Follow the SOAR structure internally — Situation, Obstacles, Actions, Results — but write as natural flowing prose. Never use labels like "Situation:", "Obstacles:", "Actions:", or "Results:" in the answer. Start immediately with a specific scene or moment, then move through the challenge, your actions, and the outcome naturally. Include concrete metrics where possible.',
+      wordCount: '150–200 words',
       tooltip: 'Situation, Obstacles, Actions, Results - proven framework for behavioral questions'
     },
     motivation: {
       name: 'Company Research',
       structure: 'Research, Alignment, Examples',
       guidance: 'Structure: Research about the company/role + alignment with personal values + specific examples of interest. Show genuine knowledge and enthusiasm.',
+      wordCount: '100–130 words',
       tooltip: 'Research-based answers showing knowledge of company values and culture'
     },
     self_assessment: {
       name: 'Self-Reflection',
       structure: 'Awareness, Examples, Improvement',
       guidance: 'Structure: Honest self-reflection + concrete examples + improvement strategies or management techniques. Balance honesty with professionalism.',
+      wordCount: '100–130 words',
       tooltip: 'Honest self-assessment with improvement strategies'
     },
     career_vision: {
       name: 'Career Planning',
       structure: 'Skills, Growth, Alignment',
       guidance: 'Structure: Realistic skill development goals + logical career progression + alignment with company opportunities. Show thoughtful planning.',
+      wordCount: '100–130 words',
       tooltip: 'Realistic career progression with skill development focus'
     },
     compensation: {
       name: 'Market Research',
       structure: 'Research, Value, Flexibility',
       guidance: 'Structure: Market research for the role/location + value proposition highlighting your worth + flexibility and openness to discussion.',
+      wordCount: '60–80 words',
       tooltip: 'Market-informed salary discussion with value demonstration'
     },
     technical: {
       name: 'Technical Explanation',
       structure: 'Concept, Method, Application',
       guidance: 'Structure: Clear step-by-step explanation + methodology/best practices + practical application examples. Use specific technical details.',
+      wordCount: '120–160 words',
       tooltip: 'Step-by-step breakdown with practical application'
     },
     general: {
       name: 'Structured Response',
       structure: 'Context, Detail, Impact',
       guidance: 'Structure: Brief context setting + detailed explanation with examples + impact or relevance to the role. Maintain professional focus.',
+      wordCount: '100–140 words',
       tooltip: 'Professional structured response with clear context and impact'
     }
   };
@@ -221,17 +228,30 @@ exports.handler = async (event, context) => {
     })));
 
     // Create intelligent prompt with methodology guidance
-    const prompt = `Generate professional interview answers using appropriate methodologies for each question type.
+    const prompt = `You are a professional interview coach. Generate high-quality, natural-sounding interview answers for each question below.
 
 Job Context: ${role} position (${experienceLevel || 'professional'})${companyName ? ` at ${companyName}` : ''}
+
+ANSWER QUALITY RULES (apply to every answer):
+- Open immediately with a specific situation, moment, or concrete fact — never a biographical setup line like "Throughout my career...", "I have always been...", or "As someone who..."
+- Include concrete metrics and outcomes wherever possible (e.g., "cut processing time by 40%", "led a team of 8 engineers", "reduced customer churn by 15%")
+- Write in a confident, natural first-person voice — the way a sharp professional actually speaks in an interview, not corporate jargon or stiff phrasing
+- Sound conversational and human, not like a formatted document or templated response
 
 Questions with recommended methodologies:
 ${questionsWithMethodologies.map((item, index) => {
   return `${index + 1}. "${item.question}"
    → Type: ${item.type.toUpperCase()}
    → Use: ${item.framework.name} (${item.framework.structure})
-   → Approach: ${item.framework.guidance}`;
+   → Approach: ${item.framework.guidance}
+   → Full answer length: ${item.framework.wordCount}`;
 }).join('\n\n')}
+
+FOR BEHAVIORAL (SOAR) ANSWERS SPECIFICALLY:
+- Use the Situation → Obstacles → Actions → Results sequence internally to organize the story
+- DO NOT write the labels "Situation:", "Obstacles:", "Actions:", or "Results:" anywhere in the answer
+- Write as continuous flowing prose — one or two paragraphs that naturally move through the story
+- The SOAR structure should be felt by the listener, not announced
 
 CRITICAL: Return ONLY valid JSON with no extra text, formatting, or control characters. Use the specific methodology for each question.
 
@@ -242,7 +262,7 @@ JSON FORMAT (no newlines in answer content):
       "question": "exact question text",
       "type": "question_type",
       "methodology": "methodology_name",
-      "full": "200-word answer using the specified methodology - keep all text on single line with no line breaks",
+      "full": "answer using the specified methodology and target word count — keep all text on single line with no line breaks",
       "concise": "60-word condensed version - single line only",
       "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4", "key point 5"]
     }
@@ -259,8 +279,8 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
 
     // Call Claude API
     const claudeRequest = {
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 4096, // Maximum allowed for Haiku model
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8096,
       temperature: 0.7,
       messages: [{
         role: 'user',
@@ -459,7 +479,7 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
           experienceLevel: experienceLevel,
           companyName: companyName,
           generatedAt: new Date().toISOString(),
-          model: 'claude-3-haiku'
+          model: 'claude-sonnet-4-6'
         }
       })
     };
