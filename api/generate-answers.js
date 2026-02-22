@@ -342,6 +342,15 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
     console.log('Extracting JSON...');
     let jsonString = responseText.trim();
 
+    // Strip markdown code fences if the model wrapped the JSON (e.g. ```json ... ```)
+    jsonString = jsonString.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
+    // If there's still non-JSON preamble, find the first { and start from there
+    const firstBrace = jsonString.indexOf('{');
+    if (firstBrace > 0) {
+      jsonString = jsonString.slice(firstBrace);
+    }
+
     console.log('=== JSON PARSING ATTEMPT ===');
     console.log('jsonString length:', jsonString?.length);
     console.log('jsonString preview:', jsonString?.substring(0, 300));
