@@ -494,39 +494,53 @@ class InterviewOraclePro {
     try {
       console.log('Generating answers for questions:', selectedQuestions);
 
-      const response = await fetch('/.netlify/functions/generate-answers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questions: selectedQuestions.map(q => q.text),
-          jobDescription: formData.jobDescription,
-          role: formData.role,
-          experienceLevel: formData.experienceLevel,
-          companyName: formData.companyName,
-          answerStyle: 'confident'
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      // Split into batches of 4 to stay within Netlify's 26s function timeout
+      const BATCH_SIZE = 4;
+      const questionTexts = selectedQuestions.map(q => q.text);
+      const batches = [];
+      for (let i = 0; i < questionTexts.length; i += BATCH_SIZE) {
+        batches.push(questionTexts.slice(i, i + BATCH_SIZE));
       }
 
-      const result = await response.json();
-      console.log('Answers generated successfully:', result);
+      const allAnswers = [];
+      for (let i = 0; i < batches.length; i++) {
+        console.log(`Generating batch ${i + 1} of ${batches.length}...`);
+        const response = await fetch('/.netlify/functions/generate-answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questions: batches[i],
+            jobDescription: formData.jobDescription,
+            role: formData.role,
+            experienceLevel: formData.experienceLevel,
+            companyName: formData.companyName,
+            answerStyle: 'confident'
+          })
+        });
 
-      this.currentAnswers = result.answers;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        allAnswers.push(...result.answers);
+      }
+
+      console.log('Answers generated successfully:', allAnswers);
+
+      this.currentAnswers = allAnswers;
       this.displayAnswers();
       this.showTab('answers');
 
       // Update stats
-      this.stats.totalAnswers += result.answers.length;
+      this.stats.totalAnswers += allAnswers.length;
 
       // Add activity tracking
-      this.addActivity('answers_generated', `Created tailored answers for ${result.answers.length} questions`);
+      this.addActivity('answers_generated', `Created tailored answers for ${allAnswers.length} questions`);
 
       this.trackEvent('answers_generated', {
-        answer_count: result.answers.length
+        answer_count: allAnswers.length
       });
 
     } catch (error) {
