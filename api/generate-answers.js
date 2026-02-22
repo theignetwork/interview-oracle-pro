@@ -280,7 +280,7 @@ IMPORTANT: Do not include any line breaks, tabs, or special characters within th
     // Call Claude API
     const claudeRequest = {
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 2048,
       temperature: 0.7,
       messages: [{
         role: 'user',

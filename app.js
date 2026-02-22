@@ -494,8 +494,8 @@ class InterviewOraclePro {
     try {
       console.log('Generating answers for questions:', selectedQuestions);
 
-      // Split into batches of 2 to stay within Netlify's 10s free-plan timeout
-      const BATCH_SIZE = 2;
+      // Split into batches of 4 to stay within Netlify's 26s pro-plan timeout
+      const BATCH_SIZE = 4;
       const questionTexts = selectedQuestions.map(q => q.text);
       const batches = [];
       for (let i = 0; i < questionTexts.length; i += BATCH_SIZE) {
